@@ -1,0 +1,71 @@
+{
+  "name": "backend",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "format": "prettier --write \"**/*.js\"",
+    "start": "node -r dotenv/config -r @babel/register index.js",
+    "start:dev": "nodemon",
+    "dev": "nodemon",
+    "prisma:generate": "npx prisma generate",
+    "prisma:push": "npx prisma db push",
+    "prisma:studio": "npx prisma studio",
+    "prisma:migrate": "npx prisma migrate dev",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "test": "jest",
+    "test:cov": "jest --coverage",
+    "test:e2e": "jest --config ./test/jest-e2e.json"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.18",
+    "@nestjs/core": "^11.1.18",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^11.1.18",
+    "@nestjs/platform-socket.io": "^11.1.18",
+    "@nestjs/swagger": "^11.2.7",
+    "@nestjs/websockets": "^11.1.18",
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "bcryptjs": "^3.0.3",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "dotenv": "^17.4.1",
+    "ioredis": "^5.10.1",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "pg": "^8.20.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "@babel/core": "7.28.4",
+    "@babel/node": "7.28.0",
+    "@babel/plugin-proposal-decorators": "7.28.0",
+    "@babel/plugin-transform-runtime": "7.28.3",
+    "@babel/preset-env": "7.28.3",
+    "@babel/register": "7.28.3",
+    "@babel/runtime": "7.28.4",
+    "@nestjs/cli": "^11.0.19",
+    "@nestjs/testing": "^11.1.18",
+    "jest": "30.2.0",
+    "nodemon": "^3.1.10",
+    "prettier": "3.6.2",
+    "prisma": "^7.7.0",
+    "supertest": "7.1.4"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json"
+    ],
+    "rootDir": "src",
+    "testRegex": ".spec.js$",
+    "coverageDirectory": "../coverage"
+  }
+}

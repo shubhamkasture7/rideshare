@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ──────────────────────────────────────────────
+
+enum Role {
+  RIDER
+  DRIVER
+}
+
+enum DriverStatus {
+  ONLINE
+  OFFLINE
+  BUSY
+}
+
+enum RideStatus {
+  REQUESTED
+  ACCEPTED
+  STARTED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  CARD
+  WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// ─── Models ─────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  role      Role     @default(RIDER)
+  avatar    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  ridesAsRider Ride[]  @relation("RiderRides")
+  driver       Driver?
+
+  @@map("users")
+}
+
+model Driver {
+  id           String       @id @default(uuid())
+  userId       String       @unique @map("user_id")
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleName  String?      @map("vehicle_name")
+  vehiclePlate String?      @map("vehicle_plate")
+  status       DriverStatus @default(OFFLINE)
+  rating       Float        @default(5.0)
+  totalRides   Int          @default(0) @map("total_rides")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  ridesAsDriver Ride[] @relation("DriverRides")
+
+  @@index([status])
+  @@map("drivers")
+}
+
+model Ride {
+  id             String     @id @default(uuid())
+  riderId        String     @map("rider_id")
+  rider          User       @relation("RiderRides", fields: [riderId], references: [id])
+  driverId       String?    @map("driver_id")
+  driver         Driver?    @relation("DriverRides", fields: [driverId], references: [id])
+  pickupLat      Float      @map("pickup_lat")
+  pickupLng      Float      @map("pickup_lng")
+  pickupAddress  String?    @map("pickup_address")
+  dropLat        Float      @map("drop_lat")
+  dropLng        Float      @map("drop_lng")
+  dropAddress    String?    @map("drop_address")
+  status         RideStatus @default(REQUESTED)
+  estimatedFare  Float?     @map("estimated_fare")
+  actualFare     Float?     @map("actual_fare")
+  estimatedTime  Int?       @map("estimated_time")
+  distance       Float?
+  startedAt      DateTime?  @map("started_at")
+  completedAt    DateTime?  @map("completed_at")
+  cancelledAt    DateTime?  @map("cancelled_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  payment Payment?
+
+  @@index([riderId])
+  @@index([driverId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("rides")
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  rideId    String        @unique @map("ride_id")
+  ride      Ride          @relation(fields: [rideId], references: [id])
+  amount    Float
+  method    PaymentMethod @default(CASH)
+  status    PaymentStatus @default(PENDING)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("payments")
+}
