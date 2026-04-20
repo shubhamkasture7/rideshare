@@ -19,8 +19,8 @@ import AssignedRideCard from './AssignedRideCard';
 import IncomingRideDialog from './IncomingRideDialog';
 import MapWrapper from '../../map/components/MapWrapper';
 import LiveMarker from '../../map/components/LiveMarker';
+import RouteRenderer from '../../map/components/RouteRenderer';
 import useDriver from '../hooks/useDriver';
-import useDriverStore from '../store/driverStore';
 import useSocket from '../../socket/hooks/useSocket';
 
 const DriverDashboard = () => {
@@ -48,37 +48,6 @@ const DriverDashboard = () => {
     const timer = setTimeout(() => setMapReady(true), 500);
     return () => clearTimeout(timer);
   }, []);
-
-  // Simulate incoming ride when online (demo)
-  useEffect(() => {
-    if (!isOnline || assignedRide || incomingRide) return;
-
-    const timer = setTimeout(() => {
-      const mockRide = {
-        id: `ride_${Date.now()}`,
-        riderName: 'Alex Rider',
-        riderRating: '4.8',
-        pickup: {
-          address: 'Connaught Place, New Delhi',
-          lat: 28.6315,
-          lng: 77.2167,
-        },
-        drop: {
-          address: 'India Gate, New Delhi',
-          lat: 28.6129,
-          lng: 77.2295,
-        },
-        estimatedFare: Math.floor(Math.random() * 300) + 100,
-        estimatedTime: Math.floor(Math.random() * 15) + 5,
-        pickupDistance: '1.5',
-      };
-
-      // Use the store directly
-      useDriverStore.getState().setIncomingRide(mockRide);
-    }, 8000);
-
-    return () => clearTimeout(timer);
-  }, [isOnline, assignedRide, incomingRide]);
 
   const statCards = [
     {
@@ -185,6 +154,14 @@ const DriverDashboard = () => {
                       position={[assignedRide.drop.lat, assignedRide.drop.lng]}
                       type="drop"
                       popupContent={`Drop: ${assignedRide.drop.address}`}
+                    />
+                  )}
+
+                  {/* Route renderer for assigned ride */}
+                  {assignedRide?.pickup && assignedRide?.drop && (
+                    <RouteRenderer
+                      pickup={{ lat: assignedRide.pickup.lat, lng: assignedRide.pickup.lng }}
+                      drop={{ lat: assignedRide.drop.lat, lng: assignedRide.drop.lng }}
                     />
                   )}
                 </MapWrapper>

@@ -3,7 +3,7 @@ import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import useNotificationStore from '../../../store/notificationStore';
 
-const LIBRARIES = ['places', 'geometry', 'drawing'];
+const LIBRARIES = ['places', 'geometry', 'drawing', 'routes'];
 const DEFAULT_CENTER = { lat: 28.6139, lng: 77.209 }; // New Delhi
 const DEFAULT_ZOOM = 14;
 
@@ -48,17 +48,25 @@ const MapWrapper = ({
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey || '',
-    version: 'quarterly',
+    version: 'weekly', // Use weekly for latest fixes
     libraries: LIBRARIES,
   });
 
   useEffect(() => {
     if (loadError) {
-      showNotification('Google Maps API failed to load. Check your API key.', 'error');
-    } else if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
-      showNotification('Google Maps API key is missing or invalid in .env', 'warning');
+      console.error('Google Maps Load Error:', loadError);
+      showNotification(`Map Load Error: ${loadError.message || 'Unknown error'}`, 'error');
+    } else if (!apiKey) {
+      showNotification('Google Maps API key is missing in .env', 'warning');
     }
-  }, [loadError, showNotification, apiKey]);
+    
+    // Check if google is loaded but services are missing (auth issues)
+    if (isLoaded && window.google) {
+      if (!window.google.maps.places) {
+        console.warn('Places library not loaded. Check if Places API is enabled.');
+      }
+    }
+  }, [loadError, isLoaded, showNotification, apiKey]);
 
   const mapCenter = useMemo(() => {
     if (Array.isArray(center)) {

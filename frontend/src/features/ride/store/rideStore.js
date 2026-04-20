@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import api from '../../../api/axiosConfig';
 
 const RIDE_STATUS = {
   IDLE: 'IDLE',
@@ -13,12 +14,18 @@ const useRideStore = create((set, get) => ({
   currentRide: null,
   rideStatus: RIDE_STATUS.IDLE,
   nearbyDrivers: [],
+  activeDriverPosition: null,
   rideHistory: [],
   isLoading: false,
   error: null,
   estimatedFare: null,
   estimatedTime: null,
+  estimatedDistance: null,
+  pickup: null,
+  drop: null,
 
+  setPickup: (pickup) => set({ pickup }),
+  setDrop: (drop) => set({ drop }),
   setRideStatus: (status) => set({ rideStatus: status }),
 
   requestRide: (rideData) => {
@@ -73,6 +80,7 @@ const useRideStore = create((set, get) => ({
     set({
       currentRide: null,
       rideStatus: RIDE_STATUS.CANCELLED,
+      activeDriverPosition: null,
     });
     setTimeout(() => set({ rideStatus: RIDE_STATUS.IDLE }), 2000);
   },
@@ -80,14 +88,31 @@ const useRideStore = create((set, get) => ({
   setNearbyDrivers: (drivers) => set({ nearbyDrivers: drivers }),
 
   updateDriverPosition: (driverId, position) => {
-    set((state) => ({
-      nearbyDrivers: state.nearbyDrivers.map((d) =>
-        d.id === driverId ? { ...d, position } : d
-      ),
-    }));
+    set((state) => {
+      const isAssignedDriver = state.currentRide?.driver?.id === driverId;
+      return {
+        nearbyDrivers: state.nearbyDrivers.map((d) =>
+          d.id === driverId ? { ...d, position } : d
+        ),
+        ...(isAssignedDriver ? { activeDriverPosition: position } : {}),
+      };
+    });
   },
 
-  setEstimates: (fare, time) => set({ estimatedFare: fare, estimatedTime: time }),
+  setEstimates: (fare, time, distance) => set({ estimatedFare: fare, estimatedTime: time, estimatedDistance: distance }),
+
+  fetchRideHistory: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.get('/rides/history');
+      set({ rideHistory: response.data, isLoading: false });
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || 'Failed to fetch ride history',
+        isLoading: false,
+      });
+    }
+  },
 
   resetRide: () =>
     set({
@@ -95,6 +120,7 @@ const useRideStore = create((set, get) => ({
       rideStatus: RIDE_STATUS.IDLE,
       estimatedFare: null,
       estimatedTime: null,
+      activeDriverPosition: null,
       error: null,
     }),
 

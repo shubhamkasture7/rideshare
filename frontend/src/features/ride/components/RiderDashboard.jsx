@@ -19,17 +19,10 @@ import RideRequestPanel from '../../ride/components/RideRequestPanel';
 import ActiveRideCard from '../../ride/components/ActiveRideCard';
 import MapWrapper from '../../map/components/MapWrapper';
 import LiveMarker from '../../map/components/LiveMarker';
+import RouteRenderer from '../../map/components/RouteRenderer';
 import useMapPosition from '../../map/hooks/useMapPosition';
 import useRideStore, { RIDE_STATUS } from '../../ride/store/rideStore';
 import useSocket from '../../socket/hooks/useSocket';
-
-const MOCK_DRIVERS = [
-  { id: 'd1', name: 'Rahul S.', position: [28.6160, 77.2115], vehicle: 'Swift Dzire' },
-  { id: 'd2', name: 'Priya K.', position: [28.6120, 77.2060], vehicle: 'Wagon R' },
-  { id: 'd3', name: 'Amit V.', position: [28.6180, 77.2130], vehicle: 'Honda City' },
-  { id: 'd4', name: 'Sunita D.', position: [28.6100, 77.2080], vehicle: 'Hyundai i20' },
-  { id: 'd5', name: 'Vikram R.', position: [28.6155, 77.2045], vehicle: 'Maruti Ertiga' },
-];
 
 const statCards = [
   {
@@ -68,33 +61,19 @@ const RiderDashboard = () => {
   const currentRide = useRideStore((s) => s.currentRide);
   const setNearbyDrivers = useRideStore((s) => s.setNearbyDrivers);
   const nearbyDrivers = useRideStore((s) => s.nearbyDrivers);
+  const activeDriverPosition = useRideStore((s) => s.activeDriverPosition);
+  const pickup = useRideStore((s) => s.pickup);
+  const drop = useRideStore((s) => s.drop);
+  const setEstimates = useRideStore((s) => s.setEstimates);
   const [mapReady, setMapReady] = useState(false);
 
   // Initialize socket events
   useSocket();
 
-  // Load mock nearby drivers
   useEffect(() => {
-    setNearbyDrivers(MOCK_DRIVERS);
     const timer = setTimeout(() => setMapReady(true), 500);
     return () => clearTimeout(timer);
-  }, [setNearbyDrivers]);
-
-  // Simulate driver movement
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setNearbyDrivers(
-        MOCK_DRIVERS.map((d) => ({
-          ...d,
-          position: [
-            d.position[0] + (Math.random() - 0.5) * 0.002,
-            d.position[1] + (Math.random() - 0.5) * 0.002,
-          ],
-        }))
-      );
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [setNearbyDrivers]);
+  }, []);
 
   const isRideActive = rideStatus !== RIDE_STATUS.IDLE;
 
@@ -147,11 +126,44 @@ const RiderDashboard = () => {
               <Box sx={{ height: { xs: 280, md: 380 }, mt: -1 }}>
                 <MapWrapper center={position} zoom={14}>
                   {/* Rider marker */}
-                  <LiveMarker
-                    position={position}
-                    type="rider"
-                    popupContent="You are here"
-                  />
+                  {!pickup && (
+                    <LiveMarker
+                      position={position}
+                      type="rider"
+                      popupContent="You are here"
+                    />
+                  )}
+
+                  {/* Selected Pickup/Drop markers */}
+                  {pickup && (
+                    <LiveMarker
+                      position={[pickup.lat, pickup.lng]}
+                      type="pickup"
+                      popupContent={pickup.address}
+                    />
+                  )}
+                  {drop && (
+                    <LiveMarker
+                      position={[drop.lat, drop.lng]}
+                      type="drop"
+                      popupContent={drop.address}
+                    />
+                  )}
+
+                  {/* Route renderer */}
+                  {pickup && drop && (
+                    <RouteRenderer
+                      pickup={pickup}
+                      drop={drop}
+                      onRouteCalculated={(data) => {
+                        setEstimates(
+                          Math.round(50 + data.distanceValue * 12),
+                          Math.round(data.durationValue),
+                          parseFloat(data.distanceValue.toFixed(1))
+                        );
+                      }}
+                    />
+                  )}
 
                   {/* Nearby driver markers */}
                   {nearbyDrivers.map((driver) => (
@@ -164,19 +176,13 @@ const RiderDashboard = () => {
                     />
                   ))}
 
-                  {/* Pickup/Drop markers when ride is active */}
-                  {currentRide?.pickup && (
+                  {/* Assigned driver marker */}
+                  {currentRide?.driver && activeDriverPosition && (
                     <LiveMarker
-                      position={[currentRide.pickup.lat, currentRide.pickup.lng]}
-                      type="pickup"
-                      popupContent={currentRide.pickup.address}
-                    />
-                  )}
-                  {currentRide?.drop && (
-                    <LiveMarker
-                      position={[currentRide.drop.lat, currentRide.drop.lng]}
-                      type="drop"
-                      popupContent={currentRide.drop.address}
+                      position={activeDriverPosition}
+                      type="driver"
+                      popupContent={`${currentRide.driver.name} is on the way`}
+                      animate
                     />
                   )}
                 </MapWrapper>

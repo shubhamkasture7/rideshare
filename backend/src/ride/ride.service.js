@@ -42,14 +42,15 @@ class RideService {
       throw new ConflictException('You already have an active ride');
     }
 
-    // Calculate estimated fare and time
-    const distance = this.calculateDistance(pickupLat, pickupLng, dropLat, dropLng);
-    const estimatedFare = this.calculateFare(distance);
-    const estimatedTime = this.calculateTime(distance);
+    // Calculate estimated fare and time (use client values if provided for consistency)
+    const distance = createRideDto.distance ? parseFloat(createRideDto.distance) : this.calculateDistance(pickupLat, pickupLng, dropLat, dropLng);
+    const estimatedFare = createRideDto.estimatedFare ? Number(createRideDto.estimatedFare) : this.calculateFare(distance);
+    const estimatedTime = createRideDto.estimatedTime ? Number(createRideDto.estimatedTime) : this.calculateTime(distance);
 
     // Create ride
     const ride = await this.prisma.ride.create({
       data: {
+        id: createRideDto.id,
         riderId,
         pickupLat,
         pickupLng,
@@ -351,6 +352,47 @@ class RideService {
         },
       },
     });
+  }
+
+  /**
+   * Get recommended locations for a user based on history
+   */
+  async getRecommendations(userId) {
+    const history = await this.prisma.ride.findMany({
+      where: { riderId: userId, status: 'COMPLETED' },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    if (history.length === 0) {
+      return { pickup: [], drop: [] };
+    }
+
+    const countLocations = (type) => {
+      const counts = {};
+      history.forEach((ride) => {
+        const addr = ride[`${type}Address`];
+        const lat = ride[`${type}Lat`];
+        const lng = ride[`${type}Lng`];
+        if (addr) {
+          const key = `${addr}|${lat}|${lng}`;
+          counts[key] = (counts[key] || 0) + 1;
+        }
+      });
+
+      return Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([key]) => {
+          const [address, lat, lng] = key.split('|');
+          return { address, lat: parseFloat(lat), lng: parseFloat(lng) };
+        });
+    };
+
+    return {
+      pickup: countLocations('pickup'),
+      drop: countLocations('drop'),
+    };
   }
 
   /**

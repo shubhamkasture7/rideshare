@@ -132,43 +132,16 @@ class SocketGateway {
         dropLat: data.dropLat || data.drop?.lat,
         dropLng: data.dropLng || data.drop?.lng,
         dropAddress: data.dropAddress || data.drop?.address,
+        estimatedFare: data.estimatedFare,
+        estimatedTime: data.estimatedTime,
+        distance: data.distance,
       });
 
-      // Find nearby drivers
-      const nearbyDrivers = await this.rideService.findNearbyDrivers(
-        ride.pickupLat,
-        ride.pickupLng,
-        5,
-      );
-
-      // Broadcast ride to nearby drivers
-      const ridePayload = {
-        ride: {
-          id: ride.id,
-          pickup: { lat: ride.pickupLat, lng: ride.pickupLng, address: ride.pickupAddress },
-          drop: { lat: ride.dropLat, lng: ride.dropLng, address: ride.dropAddress },
-          estimatedFare: ride.estimatedFare,
-          estimatedTime: ride.estimatedTime,
-          distance: ride.distance,
-          rider: ride.rider,
-          status: ride.status,
-          createdAt: ride.createdAt,
-        },
-      };
-
-      if (nearbyDrivers.length > 0) {
-        for (const driver of nearbyDrivers) {
-          this.server.to(`user:${driver.user.id}`).emit('ride.broadcast', ridePayload);
-        }
-        this.logger.log(`Ride ${ride.id} broadcast to ${nearbyDrivers.length} nearby drivers`);
-      } else {
-        // Fallback: broadcast to all online drivers
-        this.server.to('drivers').emit('ride.broadcast', ridePayload);
-        this.logger.log(`Ride ${ride.id} broadcast to all online drivers (no nearby found)`);
-      }
+      // Broadcast to drivers
+      const nearbyDrivers = await this.broadcastRide(ride);
 
       // Send nearby drivers list to rider
-      const driverList = nearbyDrivers.map((d) => ({
+      const driverList = (nearbyDrivers || []).map((d) => ({
         id: d.id,
         name: d.user.name,
         position: d.position,
@@ -331,6 +304,52 @@ class SocketGateway {
     } catch (error) {
       this.logger.error(`location.update error: ${error.message}`);
     }
+  }
+
+  /**
+   * Broadcast a ride to nearby or all online drivers
+   */
+  async broadcastRide(ride) {
+    if (!this.server) return;
+
+    // Find nearby drivers
+    const nearbyDrivers = await this.rideService.findNearbyDrivers(
+      ride.pickupLat,
+      ride.pickupLng,
+      5,
+    );
+
+    const ridePayload = {
+      ride: {
+        id: ride.id,
+        pickup: { lat: ride.pickupLat, lng: ride.pickupLng, address: ride.pickupAddress },
+        drop: { lat: ride.dropLat, lng: ride.dropLng, address: ride.dropAddress },
+        estimatedFare: ride.estimatedFare,
+        estimatedTime: ride.estimatedTime,
+        distance: ride.distance,
+        rider: ride.rider,
+        status: ride.status,
+        createdAt: ride.createdAt,
+      },
+    };
+
+    if (nearbyDrivers.length > 0) {
+      for (const driver of nearbyDrivers) {
+        const individualizedPayload = {
+          ride: {
+            ...ridePayload.ride,
+            pickupDistance: driver.distance, // distance from driver to pickup
+          },
+        };
+        this.server.to(`user:${driver.user.id}`).emit('ride.broadcast', individualizedPayload);
+      }
+      this.logger.log(`Ride ${ride.id} broadcast to ${nearbyDrivers.length} nearby drivers`);
+    } else {
+      this.server.to('drivers').emit('ride.broadcast', ridePayload);
+      this.logger.log(`Ride ${ride.id} broadcast to all online drivers (no nearby found)`);
+    }
+
+    return nearbyDrivers;
   }
 
   // ─── Utility methods ──────────────────────────────────

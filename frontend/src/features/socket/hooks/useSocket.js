@@ -60,8 +60,13 @@ const useSocket = () => {
     });
 
     socket.on('ride.created', (data) => {
-      // Confirmation that ride was created via socket
-      // The ride store is already updated by the REST call
+      if (data.ride) {
+        useRideStore.getState().requestRide({
+          ...data.ride,
+          pickup: { lat: data.ride.pickupLat, lng: data.ride.pickupLng, address: data.ride.pickupAddress },
+          drop: { lat: data.ride.dropLat, lng: data.ride.dropLng, address: data.ride.dropAddress },
+        });
+      }
     });
 
     // ---- Driver-side events ----

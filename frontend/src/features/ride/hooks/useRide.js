@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import useRideStore from '../store/rideStore';
 import rideService from '../services/rideService';
 import useNotificationStore from '../../../store/notificationStore';
+import useSocket from '../../socket/hooks/useSocket';
 
 const useRide = () => {
   const {
@@ -13,22 +14,29 @@ const useRide = () => {
     error,
     estimatedFare,
     estimatedTime,
-    requestRide,
+    estimatedDistance,
+    recommendations,
+    fetchRecommendations,
+    requestRide: setStoreRide,
     rideCancelled,
     resetRide,
     setLoading,
     setError,
     setEstimates,
+    pickup,
+    drop,
+    setPickup,
+    setDrop,
   } = useRideStore();
 
   const { showNotification } = useNotificationStore();
+  const { requestRide: socketRequestRide } = useSocket();
 
   const createRide = useCallback(
     async (rideData) => {
       setLoading(true);
       try {
-        // Transform frontend format { pickup: { lat, lng, address }, drop: { ... } }
-        // to backend format { pickupLat, pickupLng, pickupAddress, dropLat, dropLng, dropAddress }
+        // Transform formats
         const payload = {
           pickupLat: rideData.pickup?.lat || rideData.pickupLat,
           pickupLng: rideData.pickup?.lng || rideData.pickupLng,
@@ -36,28 +44,25 @@ const useRide = () => {
           dropLat: rideData.drop?.lat || rideData.dropLat,
           dropLng: rideData.drop?.lng || rideData.dropLng,
           dropAddress: rideData.drop?.address || rideData.dropAddress || 'Drop Location',
+          estimatedFare: rideData.estimatedFare,
+          estimatedTime: rideData.estimatedTime,
+          distance: rideData.distance,
         };
 
-        const result = await rideService.createRide(payload);
+        // Trigger broadcast AND creation via socket
+        socketRequestRide(payload);
 
-        // Update the store with the ride data
-        requestRide({
-          ...rideData,
-          id: result.id,
-        });
-
-        setEstimates(result.estimatedFare, result.estimatedTime);
         showNotification('Ride requested! Looking for drivers...', 'info');
-        return result;
+        return true;
       } catch (err) {
-        const message = err.response?.data?.message || err.message || 'Failed to create ride';
+        const message = err.message || 'Failed to create ride';
         setError(message);
         showNotification(message, 'error');
       } finally {
         setLoading(false);
       }
     },
-    [requestRide, setEstimates, setLoading, setError, showNotification]
+    [socketRequestRide, setLoading, setError, showNotification]
   );
 
   const cancelRide = useCallback(async () => {
@@ -81,9 +86,14 @@ const useRide = () => {
     error,
     estimatedFare,
     estimatedTime,
+    estimatedDistance,
     createRide,
     cancelRide,
     resetRide,
+    pickup,
+    drop,
+    setPickup,
+    setDrop,
   };
 };
 

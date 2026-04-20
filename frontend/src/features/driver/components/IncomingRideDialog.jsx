@@ -74,15 +74,18 @@ const IncomingRideDialog = ({ ride, onAccept, onReject, isLoading }) => {
 
       {/* Rider Info */}
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-        <Avatar sx={{ bgcolor: 'primary.main', width: 48, height: 48 }}>
-          {ride.riderName?.[0] || 'R'}
+        <Avatar 
+          src={ride.rider?.avatar} 
+          sx={{ bgcolor: 'primary.main', width: 48, height: 48 }}
+        >
+          {ride.rider?.name?.[0] || 'R'}
         </Avatar>
         <Box>
           <Typography variant="subtitle1" fontWeight={600} color="text.primary">
-            {ride.riderName || 'Rider'}
+            {ride.rider?.name || 'Rider'}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            ⭐ {ride.riderRating || '4.5'} rating
+            ⭐ {ride.rider?.rating || '4.8'} rating
           </Typography>
         </Box>
       </Stack>
@@ -103,7 +106,7 @@ const IncomingRideDialog = ({ ride, onAccept, onReject, isLoading }) => {
               Pickup
             </Typography>
             <Typography variant="body2" fontWeight={500}>
-              {ride.pickup?.address || 'Pickup Location'}
+              {ride.pickup?.address || ride.pickupAddress || 'Pickup Location'}
             </Typography>
           </Box>
         </Stack>
@@ -115,7 +118,7 @@ const IncomingRideDialog = ({ ride, onAccept, onReject, isLoading }) => {
               Drop
             </Typography>
             <Typography variant="body2" fontWeight={500}>
-              {ride.drop?.address || 'Drop Location'}
+              {ride.drop?.address || ride.dropAddress || 'Drop Location'}
             </Typography>
           </Box>
         </Stack>
@@ -134,7 +137,7 @@ const IncomingRideDialog = ({ ride, onAccept, onReject, isLoading }) => {
         >
           <CurrencyRupee sx={{ fontSize: 18, color: 'success.main' }} />
           <Typography variant="h6" fontWeight={700} color="success.main">
-            ₹{ride.estimatedFare || Math.floor(Math.random() * 300 + 100)}
+            ₹{ride.estimatedFare || 0}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Est. Fare
@@ -151,7 +154,7 @@ const IncomingRideDialog = ({ ride, onAccept, onReject, isLoading }) => {
         >
           <DirectionsWalk sx={{ fontSize: 18, color: 'info.main' }} />
           <Typography variant="h6" fontWeight={700} color="info.main">
-            {ride.pickupDistance || '1.2'} km
+            {ride.pickupDistance?.toFixed(1) || '0.0'} km
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Pickup Dist.
@@ -168,7 +171,7 @@ const IncomingRideDialog = ({ ride, onAccept, onReject, isLoading }) => {
         >
           <Schedule sx={{ fontSize: 18, color: 'warning.main' }} />
           <Typography variant="h6" fontWeight={700} color="warning.main">
-            {ride.estimatedTime || Math.floor(Math.random() * 15 + 5)} min
+            {ride.estimatedTime || 0} min
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Est. Time

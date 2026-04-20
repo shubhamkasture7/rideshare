@@ -33,16 +33,20 @@ import {
   Settings,
   DarkMode,
   ChevronLeft,
+  Shield,
+  AccountBalanceWallet,
 } from '@mui/icons-material';
 import useAuth from '../features/auth/hooks/useAuth';
+import WalletConnect from '../features/blockchain/components/WalletConnect';
 
 const DRAWER_WIDTH = 260;
 
 const riderNav = [
   { label: 'Dashboard', icon: <Dashboard />, path: '/rider/dashboard' },
-  { label: 'Map', icon: <Map />, path: '/rider/dashboard' },
-  { label: 'Ride History', icon: <History />, path: '/rider/dashboard' },
-  { label: 'Profile', icon: <Person />, path: '/rider/dashboard' },
+  { label: 'Map History', icon: <Map />, path: '/rider/map' },
+  { label: 'Ride History', icon: <History />, path: '/rider/history' },
+  { label: 'Profile', icon: <Person />, path: '/rider/profile' },
+  { label: 'Blockchain', icon: <Shield />, path: '/rider/blockchain', chip: 'Web3' },
 ];
 
 const driverNav = [
@@ -50,12 +54,14 @@ const driverNav = [
   { label: 'Map', icon: <Map />, path: '/driver/dashboard' },
   { label: 'Earnings', icon: <History />, path: '/driver/dashboard' },
   { label: 'Profile', icon: <Person />, path: '/driver/dashboard' },
+  { label: 'Blockchain', icon: <Shield />, path: '/driver/blockchain', chip: 'Web3' },
 ];
 
 const DashboardLayout = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
   const { user, logout, isRider } = useAuth();
   const location = useLocation();
 
@@ -112,6 +118,7 @@ const DashboardLayout = () => {
               <ListItemButton
                 selected={isActive}
                 onClick={() => {
+                  navigate(item.path);
                   if (isMobile) setMobileOpen(false);
                 }}
                 sx={{
@@ -122,18 +129,35 @@ const DashboardLayout = () => {
                 <ListItemIcon
                   sx={{
                     minWidth: 40,
-                    color: isActive ? 'primary.main' : 'text.secondary',
+                    color: isActive ? 'primary.main' : item.chip ? '#A29BFE' : 'text.secondary',
                   }}
                 >
                   {item.icon}
                 </ListItemIcon>
                 <ListItemText
                   primary={item.label}
-                  primaryTypographyProps={{
-                    fontSize: '0.9rem',
-                    fontWeight: isActive ? 600 : 400,
+                  slotProps={{
+                    primary: {
+                      fontSize: '0.9rem',
+                      fontWeight: isActive ? 600 : item.chip ? 600 : 400,
+                      color: item.chip ? '#A29BFE' : 'inherit',
+                    },
                   }}
                 />
+                {item.chip && (
+                  <Chip
+                    label={item.chip}
+                    size="small"
+                    sx={{
+                      height: 18,
+                      fontSize: '0.6rem',
+                      fontWeight: 700,
+                      background: alpha('#6C5CE7', 0.15),
+                      color: '#A29BFE',
+                      border: `1px solid ${alpha('#6C5CE7', 0.25)}`,
+                    }}
+                  />
+                )}
               </ListItemButton>
             </ListItem>
           );
@@ -205,6 +229,9 @@ const DashboardLayout = () => {
           <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
             {isRider ? 'Rider' : 'Driver'} Dashboard
           </Typography>
+          <Box sx={{ mr: 1 }}>
+            <WalletConnect compact />
+          </Box>
           <Tooltip title="Dark Mode">
             <IconButton color="inherit">
               <DarkMode />

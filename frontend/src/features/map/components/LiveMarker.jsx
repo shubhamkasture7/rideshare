@@ -46,22 +46,40 @@ const PulseMarker = ({ color, label }) => (
   </Box>
 );
 
-const CarMarker = () => (
+const CarMarker = ({ rotation = 0 }) => (
   <Box
     sx={{
-      width: 32,
-      height: 32,
+      width: 36,
+      height: 36,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontSize: '24px',
-      transform: 'translate(-50%, -50%)',
-      filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))',
+      fontSize: '28px',
+      transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+      transition: 'transform 0.3s ease-out',
+      filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.5))',
+      userSelect: 'none',
+      cursor: 'pointer',
     }}
   >
-    🚗
+    🚕
   </Box>
 );
+
+const calculateBearing = (start, end) => {
+  if (!start || !end) return 0;
+  const startLat = (start.lat * Math.PI) / 180;
+  const startLng = (start.lng * Math.PI) / 180;
+  const endLat = (end.lat * Math.PI) / 180;
+  const endLng = (end.lng * Math.PI) / 180;
+
+  const y = Math.sin(endLng - startLng) * Math.cos(endLat);
+  const x =
+    Math.cos(startLat) * Math.sin(endLat) -
+    Math.sin(startLat) * Math.cos(endLat) * Math.cos(endLng - startLng);
+  let brng = (Math.atan2(y, x) * 180) / Math.PI;
+  return (brng + 360) % 360;
+};
 
 const LiveMarker = ({
   position,
@@ -75,19 +93,26 @@ const LiveMarker = ({
     return position;
   });
   
+  const [rotation, setRotation] = useState(0);
   const prevPositionRef = useRef(position);
 
   useEffect(() => {
     const target = Array.isArray(position) ? { lat: position[0], lng: position[1] } : position;
+    const start = Array.isArray(prevPositionRef.current) 
+      ? { lat: prevPositionRef.current[0], lng: prevPositionRef.current[1] } 
+      : prevPositionRef.current;
+
+    if (start.lat !== target.lat || start.lng !== target.lng) {
+      const newBearing = calculateBearing(start, target);
+      if (Math.abs(newBearing - rotation) > 1) { // Avoid micro-rotations
+        setRotation(newBearing);
+      }
+    }
     
     if (!animate) {
       setCurrentPos(target);
       return;
     }
-
-    const start = Array.isArray(prevPositionRef.current) 
-      ? { lat: prevPositionRef.current[0], lng: prevPositionRef.current[1] } 
-      : prevPositionRef.current;
 
     if (start.lat === target.lat && start.lng === target.lng) return;
 
@@ -116,12 +141,12 @@ const LiveMarker = ({
   const markerView = useMemo(() => {
     switch (type) {
       case 'rider': return <PulseMarker color="#6C5CE7" label="👤" />;
-      case 'driver': return <CarMarker />;
+      case 'driver': return <CarMarker rotation={rotation} />;
       case 'pickup': return <PulseMarker color="#00B894" label="P" />;
       case 'drop': return <PulseMarker color="#E17055" label="D" />;
       default: return <PulseMarker color="#74B9FF" />;
     }
-  }, [type]);
+  }, [type, rotation]);
 
   return (
     <OverlayView
