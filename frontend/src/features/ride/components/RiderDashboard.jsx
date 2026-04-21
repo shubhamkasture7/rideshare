@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef} from 'react';
 import {
   Box,
   Grid,
@@ -23,59 +23,143 @@ import RouteRenderer from '../../map/components/RouteRenderer';
 import useMapPosition from '../../map/hooks/useMapPosition';
 import useRideStore, { RIDE_STATUS } from '../../ride/store/rideStore';
 import useSocket from '../../socket/hooks/useSocket';
+import useBlockchain from '../../blockchain/useBlockchain';
+import { History, SwapHoriz } from '@mui/icons-material';
 
-const statCards = [
-  {
-    label: 'Total Rides',
-    value: '24',
-    icon: <LocalTaxi />,
-    color: '#6C5CE7',
-    gradient: 'linear-gradient(135deg, #6C5CE7, #A29BFE)',
-  },
-  {
-    label: 'Total Spent',
-    value: '₹4,520',
-    icon: <TrendingUp />,
-    color: '#00CEC9',
-    gradient: 'linear-gradient(135deg, #00CEC9, #55EFC4)',
-  },
-  {
-    label: 'Avg. Duration',
-    value: '18 min',
-    icon: <AccessTime />,
-    color: '#FDCB6E',
-    gradient: 'linear-gradient(135deg, #FDCB6E, #FD79A8)',
-  },
-  {
-    label: 'Distance',
-    value: '156 km',
-    icon: <Route />,
-    color: '#74B9FF',
-    gradient: 'linear-gradient(135deg, #74B9FF, #A29BFE)',
-  },
-];
+// Removed hardcoded statCards placeholder
+
 
 const RiderDashboard = () => {
   const { position } = useMapPosition();
-  const rideStatus = useRideStore((s) => s.rideStatus);
-  const currentRide = useRideStore((s) => s.currentRide);
-  const setNearbyDrivers = useRideStore((s) => s.setNearbyDrivers);
-  const nearbyDrivers = useRideStore((s) => s.nearbyDrivers);
-  const activeDriverPosition = useRideStore((s) => s.activeDriverPosition);
-  const pickup = useRideStore((s) => s.pickup);
-  const drop = useRideStore((s) => s.drop);
-  const setEstimates = useRideStore((s) => s.setEstimates);
-  const [mapReady, setMapReady] = useState(false);
+  const { 
+    rideStatus, 
+    currentRide, 
+    rideHistory, 
+    fetchRideHistory,
+    setEstimates,
+    nearbyDrivers,
+    activeDriverPosition
+  } = useRideStore();
+  
+  const { 
+    walletConnected, 
+    walletAddress, 
+    fetchOnChainHistory,
+    isCorrectNetwork 
+  } = useBlockchain();
+
+  const [blockchainHistory, setBlockchainHistory] = React.useState([]);
+  const [isDataLoading, setIsDataLoading] = React.useState(false);
+  const [mapReady, setMapReady] = React.useState(false);
 
   // Initialize socket events
-  useSocket();
-
-  useEffect(() => {
-    const timer = setTimeout(() => setMapReady(true), 500);
-    return () => clearTimeout(timer);
-  }, []);
+  const { sendRiderLocationUpdate } = useSocket();
 
   const isRideActive = rideStatus !== RIDE_STATUS.IDLE;
+
+  const handleRouteCalculated = useCallback((data) => {
+    setEstimates(
+      Math.round(50 + data.distanceValue * 12),
+      Math.round(data.durationValue),
+      parseFloat(data.distanceValue.toFixed(1))
+    );
+  }, [setEstimates]);
+
+  const loadData = React.useCallback(async () => {
+    if (isDataLoading) return;
+    setIsDataLoading(true);
+    try {
+      await fetchRideHistory();
+      if (walletConnected) {
+        const onChain = await fetchOnChainHistory();
+        setBlockchainHistory(onChain);
+      }
+    } catch (err) {
+      console.error('Data fetch error:', err);
+    } finally {
+      setIsDataLoading(false);
+    }
+  }, [walletConnected, walletAddress, fetchRideHistory, fetchOnChainHistory]);
+
+  useEffect(() => {
+    loadData();
+    const timer = setTimeout(() => setMapReady(true), 500);
+    return () => clearTimeout(timer);
+  }, [loadData]);
+
+  const statCards = React.useMemo(() => {
+    const totalRides = rideHistory.length;
+    const completedRides = rideHistory.filter(r => r.status === 'COMPLETED').length;
+    const totalSpent = rideHistory.reduce((acc, r) => acc + (r.actualFare || r.estimatedFare || 0), 0);
+    const totalEth = blockchainHistory.reduce((acc, r) => acc + parseFloat(r.fare || 0), 0);
+
+    return [
+      {
+        label: 'Total Rides',
+        value: totalRides || '0',
+        icon: <LocalTaxi />,
+        color: '#FF6B00',
+      },
+      {
+        label: 'Total Spent',
+        value: `₹${totalSpent.toLocaleString()}`,
+        icon: <TrendingUp />,
+        color: '#059669',
+      },
+      {
+        label: 'On-Chain',
+        value: `${totalEth.toFixed(3)} ETH`,
+        icon: <History />,
+        color: '#6366F1',
+      },
+      {
+        label: 'Completed',
+        value: completedRides || '0',
+        icon: <Route />,
+        color: '#F59E0B',
+      },
+    ];
+  }, [rideHistory, blockchainHistory]);
+
+  const pickup = useRideStore((s) => s.pickup);
+  const drop = useRideStore((s) => s.drop);
+
+  // Update nearby drivers based on current position and periodically
+  useEffect(() => {
+    if (!position || isRideActive) return;
+
+    // Initial update
+    sendRiderLocationUpdate(position);
+
+    // Periodic refresh (every 5 seconds)
+    const interval = setInterval(() => {
+      sendRiderLocationUpdate(position);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [position, isRideActive, sendRiderLocationUpdate]);
+
+  const mapRef = useRef(null);
+  const onMapLoad = useCallback((map) => {
+    mapRef.current = map;
+  }, []);
+
+  // Update bounds to include driver
+  useEffect(() => {
+    if (!mapRef.current || !activeDriverPosition) return;
+    
+    const bounds = new window.google.maps.LatLngBounds();
+    
+    // Add driver
+    bounds.extend({ lat: activeDriverPosition[0], lng: activeDriverPosition[1] });
+    
+    // Add pickup and drop if they exist
+    if (pickup) bounds.extend({ lat: pickup.lat, lng: pickup.lng });
+    if (drop) bounds.extend({ lat: drop.lat, lng: drop.lng });
+    
+    // Fit with some padding
+    mapRef.current.fitBounds(bounds, { top: 100, right: 100, bottom: 100, left: 100 });
+  }, [activeDriverPosition, pickup, drop]);
 
   return (
     <Box>
@@ -124,7 +208,7 @@ const RiderDashboard = () => {
               <MapSkeleton />
             ) : (
               <Box sx={{ height: { xs: 280, md: 380 }, mt: -1 }}>
-                <MapWrapper center={position} zoom={14}>
+                <MapWrapper center={position} zoom={14} onLoad={onMapLoad}>
                   {/* Rider marker */}
                   {!pickup && (
                     <LiveMarker
@@ -155,13 +239,7 @@ const RiderDashboard = () => {
                     <RouteRenderer
                       pickup={pickup}
                       drop={drop}
-                      onRouteCalculated={(data) => {
-                        setEstimates(
-                          Math.round(50 + data.distanceValue * 12),
-                          Math.round(data.durationValue),
-                          parseFloat(data.distanceValue.toFixed(1))
-                        );
-                      }}
+                      onRouteCalculated={handleRouteCalculated}
                     />
                   )}
 
@@ -196,6 +274,42 @@ const RiderDashboard = () => {
           <Stack spacing={3}>
             {!isRideActive && <RideRequestPanel />}
             <ActiveRideCard />
+            
+            {/* Quick Transactions View */}
+            <GlassCard 
+              title="RS Transactions" 
+              subtitle="Recent on-chain activity"
+              icon={<SwapHoriz sx={{ color: '#6366F1' }} />}
+            >
+              {blockchainHistory.length > 0 ? (
+                <Stack spacing={2}>
+                  {blockchainHistory.slice(0, 3).map((tx, idx) => (
+                    <Box key={idx} sx={{ p: 1.5, borderRadius: 2, bgcolor: alpha('#fff', 0.03), border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Typography variant="caption" fontWeight={700} color="text.primary">
+                          {parseFloat(tx.fare).toFixed(4)} ETH
+                        </Typography>
+                        <Chip 
+                          label={tx.status === 4 ? 'COMPLETED' : 'LOCKED'} 
+                          size="small" 
+                          sx={{ height: 18, fontSize: '0.65rem', bgcolor: alpha(tx.status === 4 ? '#00B894' : '#FDCB6E', 0.1), color: tx.status === 4 ? '#00B894' : '#FDCB6E' }} 
+                        />
+                      </Stack>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontSize: '0.7rem' }}>
+                        {new Date(tx.timestamp).toLocaleString()}
+                      </Typography>
+                    </Box>
+                  ))}
+                  <Typography variant="caption" sx={{ textAlign: 'center', color: 'primary.main', cursor: 'pointer', mt: 1 }}>
+                    View all in Blockchain Tab
+                  </Typography>
+                </Stack>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 2 }}>
+                  <Typography variant="caption" color="text.secondary">No on-chain transactions yet.</Typography>
+                </Box>
+              )}
+            </GlassCard>
           </Stack>
         </Grid>
       </Grid>

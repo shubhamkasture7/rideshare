@@ -55,15 +55,20 @@ const WalletConnect = ({ compact = false }) => {
           disabled={isConnecting}
           startIcon={isConnecting ? <CircularProgress size={12} /> : <AccountBalanceWallet />}
           sx={{
-            borderColor: '#6C5CE7',
-            color: '#6C5CE7',
+            borderColor: '#FF6B00',
+            color: '#FF6B00',
             fontSize: '0.7rem',
             py: 0.5,
-            '&:hover': { background: alpha('#6C5CE7', 0.1) },
+            borderRadius: 2,
+            '&:hover': { 
+              background: alpha('#FF6B00', 0.08),
+              borderColor: '#FF6B00'
+            },
           }}
         >
           {isConnecting ? 'Connecting...' : 'Connect Wallet'}
         </Button>
+
       );
     }
 
@@ -87,21 +92,22 @@ const WalletConnect = ({ compact = false }) => {
     }
 
     return (
-      <Chip
-        icon={<CheckCircle sx={{ fontSize: '16px !important', color: '#00B894' }} />}
-        label={shortAddress}
-        onClick={copyAddress}
-        size="small"
-        sx={{
-          background: alpha('#00B894', 0.12),
-          color: '#00B894',
-          border: `1px solid ${alpha('#00B894', 0.3)}`,
-          cursor: 'pointer',
-          fontFamily: 'monospace',
-          fontWeight: 600,
-          '&:hover': { background: alpha('#00B894', 0.2) },
-        }}
-      />
+        <Chip
+          icon={<CheckCircle sx={{ fontSize: '16px !important', color: '#10B981' }} />}
+          label={shortAddress}
+          onClick={copyAddress}
+          size="small"
+          sx={{
+            background: alpha('#10B981', 0.1),
+            color: '#10B981',
+            border: `1px solid ${alpha('#10B981', 0.2)}`,
+            cursor: 'pointer',
+            fontFamily: 'monospace',
+            fontWeight: 700,
+            '&:hover': { background: alpha('#10B981', 0.15) },
+          }}
+        />
+
     );
   }
 
@@ -111,20 +117,21 @@ const WalletConnect = ({ compact = false }) => {
     <Box
       sx={{
         p: 2.5,
-        borderRadius: 3,
+        borderRadius: 4,
         background: walletConnected && isCorrectNetwork
-          ? `linear-gradient(135deg, ${alpha('#00B894', 0.08)}, ${alpha('#00CEC9', 0.08)})`
+          ? `linear-gradient(135deg, ${alpha('#10B981', 0.05)}, ${alpha('#3B82F6', 0.05)})`
           : walletConnected
-          ? `linear-gradient(135deg, ${alpha('#FD79A8', 0.08)}, ${alpha('#FDCB6E', 0.08)})`
-          : `linear-gradient(135deg, ${alpha('#6C5CE7', 0.08)}, ${alpha('#A29BFE', 0.08)})`,
+          ? `linear-gradient(135deg, ${alpha('#EF4444', 0.05)}, ${alpha('#F59E0B', 0.05)})`
+          : `linear-gradient(135deg, ${alpha('#FF6B00', 0.05)}, ${alpha('#FF8533', 0.05)})`,
         border: '1px solid',
         borderColor: walletConnected && isCorrectNetwork
-          ? alpha('#00B894', 0.25)
+          ? alpha('#10B981', 0.2)
           : walletConnected
-          ? alpha('#FD79A8', 0.25)
-          : alpha('#6C5CE7', 0.25),
+          ? alpha('#EF4444', 0.2)
+          : alpha('#FF6B00', 0.2),
       }}
     >
+
       {walletConnected ? (
         <Stack spacing={1.5}>
           {/* Connection indicator */}
@@ -135,8 +142,8 @@ const WalletConnect = ({ compact = false }) => {
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  bgcolor: isCorrectNetwork ? '#00B894' : '#FD79A8',
-                  boxShadow: `0 0 6px ${isCorrectNetwork ? '#00B894' : '#FD79A8'}`,
+                  bgcolor: isCorrectNetwork ? '#10B981' : '#EF4444',
+                  boxShadow: `0 0 8px ${isCorrectNetwork ? '#10B981' : '#EF4444'}`,
                   animation: 'pulse 2s infinite',
                   '@keyframes pulse': {
                     '0%, 100%': { opacity: 1 },
@@ -146,13 +153,14 @@ const WalletConnect = ({ compact = false }) => {
               />
               <Typography
                 variant="caption"
-                color={isCorrectNetwork ? '#00B894' : '#FD79A8'}
-                fontWeight={700}
+                color={isCorrectNetwork ? '#10B981' : '#EF4444'}
+                fontWeight={800}
                 textTransform="uppercase"
                 letterSpacing={1}
               >
                 {isCorrectNetwork ? 'Wallet Connected' : 'Wrong Network'}
               </Typography>
+
             </Stack>
             <Tooltip title="Disconnect wallet">
               <Button
@@ -197,8 +205,8 @@ const WalletConnect = ({ compact = false }) => {
 
           {/* Wallet address */}
           <Stack direction="row" alignItems="center" spacing={1}>
-            <AccountBalanceWallet sx={{ fontSize: 18, color: '#6C5CE7' }} />
-            <Typography variant="body2" fontFamily="monospace" color="text.primary" fontWeight={600}>
+            <AccountBalanceWallet sx={{ fontSize: 18, color: '#FF6B00' }} />
+            <Typography variant="body2" fontFamily="monospace" color="text.primary" fontWeight={700}>
               {shortAddress}
             </Typography>
             <Tooltip title="Copy address">
@@ -209,15 +217,16 @@ const WalletConnect = ({ compact = false }) => {
             </Tooltip>
           </Stack>
 
+
           {/* Balance + Network */}
           <Stack direction="row" spacing={1} flexWrap="wrap">
             <Chip
               label={balance === '—' ? 'Balance unavailable' : `${parseFloat(balance || 0).toFixed(4)} ETH`}
               size="small"
               sx={{
-                background: balance === '—' ? alpha('#636e72', 0.12) : alpha('#6C5CE7', 0.12),
-                color: balance === '—' ? '#636e72' : '#A29BFE',
-                fontWeight: 700,
+                background: balance === '—' ? alpha('#64748B', 0.1) : alpha('#FF6B00', 0.1),
+                color: balance === '—' ? '#64748B' : '#FF6B00',
+                fontWeight: 800,
                 fontSize: '0.72rem',
               }}
             />
@@ -226,13 +235,14 @@ const WalletConnect = ({ compact = false }) => {
               size="small"
               icon={isCorrectNetwork ? undefined : <Warning sx={{ fontSize: '12px !important' }} />}
               sx={{
-                background: isCorrectNetwork ? alpha('#FDCB6E', 0.12) : alpha('#FD79A8', 0.12),
-                color: isCorrectNetwork ? '#FDCB6E' : '#FD79A8',
-                fontWeight: 700,
+                background: isCorrectNetwork ? alpha('#F59E0B', 0.1) : alpha('#EF4444', 0.1),
+                color: isCorrectNetwork ? '#D97706' : '#EF4444',
+                fontWeight: 800,
                 fontSize: '0.72rem',
               }}
             />
           </Stack>
+
 
           {/* Local node not running hint */}
           {balance === '—' && chainId === 31337 && (
@@ -243,14 +253,14 @@ const WalletConnect = ({ compact = false }) => {
         </Stack>
       ) : (
         // ─── Not connected ─────────────────────────────────────────────────
-        <Stack spacing={2} alignItems="center">
-          <AccountBalanceWallet sx={{ fontSize: 40, color: alpha('#6C5CE7', 0.5) }} />
+        <Stack spacing={2} sx={{ alignItems: 'center' }}>
+          <AccountBalanceWallet sx={{ fontSize: 48, color: alpha('#FF6B00', 0.2) }} />
           <Box textAlign="center">
-            <Typography variant="body2" fontWeight={700} color="text.primary" gutterBottom>
-              Connect Your Ethereum Wallet
+            <Typography variant="body1" fontWeight={800} color="text.primary" gutterBottom>
+              Connect Ethereum Wallet
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Works with MetaMask, Coinbase Wallet, or any EVM-compatible wallet
+            <Typography variant="body2" color="text.secondary">
+              Securely lock your ride fare with any EVM-compatible wallet
             </Typography>
           </Box>
 
@@ -267,25 +277,29 @@ const WalletConnect = ({ compact = false }) => {
             disabled={isConnecting}
             startIcon={isConnecting ? <CircularProgress size={16} color="inherit" /> : <AccountBalanceWallet />}
             sx={{
-              background: 'linear-gradient(135deg, #6C5CE7, #A29BFE)',
-              py: 1.2,
-              fontWeight: 700,
+              background: 'linear-gradient(135deg, #FF6B00, #FF8533)',
+              py: 1.5,
+              fontWeight: 800,
+              fontSize: '0.9rem',
+              borderRadius: 3,
+              boxShadow: '0 8px 16px rgba(255, 107, 0, 0.2)',
             }}
           >
             {isConnecting ? 'Connecting...' : 'Connect MetaMask'}
           </Button>
 
           <Typography variant="caption" color="text.secondary" textAlign="center">
-            Don't have MetaMask?{' '}
+            New to Crypto?{' '}
             <a
               href="https://metamask.io/download/"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: '#A29BFE' }}
+              style={{ color: '#FF6B00', fontWeight: 700 }}
             >
-              Install it free →
+              Get MetaMask →
             </a>
           </Typography>
+
         </Stack>
       )}
     </Box>

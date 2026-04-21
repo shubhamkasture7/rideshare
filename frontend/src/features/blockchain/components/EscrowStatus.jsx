@@ -29,12 +29,13 @@ import useBlockchain from '../useBlockchain';
 const ETH_TO_INR = 230000; // Approximate rate for display
 
 const statusConfig = {
-  CREATED: { label: 'Escrowed', color: '#FDCB6E', icon: <Lock sx={{ fontSize: 14 }} /> },
-  ACCEPTED: { label: 'Driver Locked', color: '#74B9FF', icon: <Shield sx={{ fontSize: 14 }} /> },
-  STARTED: { label: 'Ride Active', color: '#6C5CE7', icon: <Bolt sx={{ fontSize: 14 }} /> },
-  COMPLETED: { label: 'Paid Out', color: '#00B894', icon: <CheckCircle sx={{ fontSize: 14 }} /> },
-  CANCELLED: { label: 'Refunded', color: '#FD79A8', icon: <LockOpen sx={{ fontSize: 14 }} /> },
+  CREATED: { label: 'Escrowed', color: '#FF6B00', icon: <Lock sx={{ fontSize: 14 }} /> },
+  ACCEPTED: { label: 'Driver Locked', color: '#3B82F6', icon: <Shield sx={{ fontSize: 14 }} /> },
+  STARTED: { label: 'Ride Active', color: '#FF6B00', icon: <Bolt sx={{ fontSize: 14 }} /> },
+  COMPLETED: { label: 'Paid Out', color: '#10B981', icon: <CheckCircle sx={{ fontSize: 14 }} /> },
+  CANCELLED: { label: 'Refunded', color: '#EF4444', icon: <LockOpen sx={{ fontSize: 14 }} /> },
 };
+
 
 const EscrowStatus = ({ rideId, fareInr }) => {
   const { rideOnChain, txHash, txPending, escrowBalance, walletConnected } = useBlockchain();
@@ -53,16 +54,15 @@ const EscrowStatus = ({ rideId, fareInr }) => {
         borderRadius: 2.5,
         overflow: 'hidden',
         border: '1px solid',
-        borderColor: alpha(status.color, 0.3),
-        background: `linear-gradient(135deg, ${alpha('#0A0E1A', 0.9)}, ${alpha(status.color, 0.05)})`,
+        borderColor: alpha(status.color, 0.2),
+        background: `linear-gradient(135deg, #FFFFFF, ${alpha(status.color, 0.05)})`,
       }}
+
     >
       {/* Header */}
       <Stack
         direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{ px: 2, py: 1.5, cursor: 'pointer' }}
+        sx={{ px: 2, py: 1.5, cursor: 'pointer', alignItems: 'center', justifyContent: 'space-between' }}
         onClick={() => setExpanded((v) => !v)}
       >
         <Stack direction="row" alignItems="center" spacing={1}>
@@ -131,8 +131,7 @@ const EscrowStatus = ({ rideId, fareInr }) => {
                 <Stack
                   direction="row"
                   spacing={0.5}
-                  alignItems="center"
-                  sx={{ cursor: 'pointer' }}
+                  sx={{ cursor: 'pointer', alignItems: 'center' }}
                   onClick={() => navigator.clipboard.writeText(txHash)}
                 >
                   <Typography variant="caption" fontFamily="monospace" color="text.primary">
@@ -150,19 +149,20 @@ const EscrowStatus = ({ rideId, fareInr }) => {
               mt: 1,
               p: 1.5,
               borderRadius: 1.5,
-              background: alpha('#6C5CE7', 0.06),
-              border: `1px solid ${alpha('#6C5CE7', 0.12)}`,
+              background: alpha('#FF6B00', 0.04),
+              border: `1px solid ${alpha('#FF6B00', 0.1)}`,
             }}
           >
             <Stack direction="row" spacing={1} alignItems="flex-start">
-              <Shield sx={{ fontSize: 16, color: '#A29BFE', mt: 0.2 }} />
+              <Shield sx={{ fontSize: 16, color: '#FF6B00', mt: 0.2 }} />
               <Typography variant="caption" color="text.secondary" lineHeight={1.6}>
                 Your payment is locked in a smart contract. It is{' '}
-                <strong style={{ color: '#A29BFE' }}>automatically released</strong> to the driver
+                <strong style={{ color: '#FF6B00' }}>automatically released</strong> to the driver
                 when the ride completes — no middleman, no manual action.
               </Typography>
             </Stack>
           </Box>
+
 
           {txPending && (
             <Stack direction="row" spacing={1} alignItems="center">

@@ -87,14 +87,15 @@ class SocketGateway {
       if (user.role === 'DRIVER' && user.driver) {
         client.join('drivers');
         client.join(`driver:${user.driver.id}`);
+        this.logger.log(`Driver ${user.name} joined 'drivers' room`);
       }
 
       // Track socket mapping
       this.userSocketMap.set(user.id, client.id);
 
-      this.logger.log(`Client connected: ${client.id} (User: ${user.name}, Role: ${user.role})`);
+      this.logger.log(`✅ Client connected: ${client.id} (User: ${user.name}, Role: ${user.role})`);
     } catch (error) {
-      this.logger.error(`Socket auth failed: ${error.message}`);
+      this.logger.error(`❌ Socket auth failed: ${error.message}`);
       client.disconnect();
     }
   }
@@ -146,7 +147,7 @@ class SocketGateway {
         name: d.user.name,
         position: d.position,
         rating: d.rating,
-        vehicleName: d.vehicleName,
+        vehicle: d.vehicleName,
         distance: d.distance,
       }));
 
@@ -306,6 +307,31 @@ class SocketGateway {
     }
   }
 
+  @SubscribeMessage('rider.location.update')
+  async handleRiderLocationUpdate(client, data) {
+    try {
+      const lat = data.position?.lat || data.lat;
+      const lng = data.position?.lng || data.lng;
+      if (!lat || !lng) return;
+
+      // Find nearby drivers within 5km radius
+      const nearbyDrivers = await this.rideService.findNearbyDrivers(lat, lng, 5);
+
+      const driverList = (nearbyDrivers || []).map((d) => ({
+        id: d.id,
+        name: d.user.name,
+        position: d.position,
+        rating: d.rating,
+        vehicle: d.vehicleName,
+        distance: d.distance,
+      }));
+
+      client.emit('nearby.drivers', { drivers: driverList });
+    } catch (error) {
+      this.logger.error(`rider.location.update error: ${error.message}`);
+    }
+  }
+
   /**
    * Broadcast a ride to nearby or all online drivers
    */
@@ -341,12 +367,14 @@ class SocketGateway {
             pickupDistance: driver.distance, // distance from driver to pickup
           },
         };
+        this.logger.log(`📡 Emitting ride.broadcast to user:${driver.user.id}`);
         this.server.to(`user:${driver.user.id}`).emit('ride.broadcast', individualizedPayload);
       }
-      this.logger.log(`Ride ${ride.id} broadcast to ${nearbyDrivers.length} nearby drivers`);
+      this.logger.log(`✅ Ride ${ride.id} broadcast to ${nearbyDrivers.length} nearby drivers`);
     } else {
+      this.logger.warn(`⚠️ No nearby drivers found for ride ${ride.id}. Broadcasting to all drivers room.`);
       this.server.to('drivers').emit('ride.broadcast', ridePayload);
-      this.logger.log(`Ride ${ride.id} broadcast to all online drivers (no nearby found)`);
+      this.logger.log(`✅ Ride ${ride.id} broadcast to all online drivers`);
     }
 
     return nearbyDrivers;

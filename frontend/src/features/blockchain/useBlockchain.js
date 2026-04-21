@@ -152,6 +152,20 @@ const useBlockchain = () => {
 
   const createRideOnChain = useCallback(async (rideId, pickup, drop, fareEth) => {
     try {
+      // ⚡ BYPASS FOR FREE RIDES
+      if (parseFloat(fareEth) === 0) {
+        console.log('⚡ [Blockchain] Free Ride detected: Bypassing MetaMask transaction');
+        const rideIdBytes32 = keccak256(toUtf8Bytes(rideId));
+        setRideOnChain({ 
+          rideId, 
+          rideIdBytes32, 
+          status: 'CREATED', 
+          fareEth: '0', 
+          txHash: '0x_MOCKED_FREE_TRANSACTION' 
+        });
+        return { success: true, txHash: '0x_MOCKED_FREE_TRANSACTION' };
+      }
+
       console.log('🔗 [Blockchain] Creating Ride Escrow:', { rideId, pickup, drop, fareEth });
       
       const contract = await getContract(true);
@@ -198,8 +212,12 @@ const useBlockchain = () => {
     }
   }, [walletConnected]);
 
-  const acceptRideOnChain = useCallback(async (rideId) => {
+  const acceptRideOnChain = useCallback(async (rideId, isFree = false) => {
     try {
+      if (isFree) {
+        console.log('⚡ [Blockchain] Free Ride: Bypassing Accept transaction');
+        return { success: true, txHash: '0x_MOCKED_FREE_ACCEPT' };
+      }
       const provider = getProvider();
       const contract = await getContract(true);
       const feeData = await provider.getFeeData();
@@ -217,8 +235,12 @@ const useBlockchain = () => {
     }
   }, [walletConnected]);
 
-  const startRideOnChain = useCallback(async (rideId) => {
+  const startRideOnChain = useCallback(async (rideId, isFree = false) => {
     try {
+      if (isFree) {
+        console.log('⚡ [Blockchain] Free Ride: Bypassing Start transaction');
+        return { success: true, txHash: '0x_MOCKED_FREE_START' };
+      }
       const provider = getProvider();
       const contract = await getContract(true);
       const feeData = await provider.getFeeData();
@@ -236,8 +258,12 @@ const useBlockchain = () => {
     }
   }, [walletConnected]);
 
-  const completeRideOnChain = useCallback(async (rideId) => {
+  const completeRideOnChain = useCallback(async (rideId, isFree = false) => {
     try {
+      if (isFree) {
+        console.log('⚡ [Blockchain] Free Ride: Bypassing Complete transaction');
+        return { success: true, txHash: '0x_MOCKED_FREE_COMPLETE' };
+      }
       const provider = getProvider();
       const contract = await getContract(true);
       showNotification('💰 Releasing payment from escrow...', 'info');

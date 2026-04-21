@@ -82,7 +82,7 @@ class RideService {
     // Try to acquire lock to prevent race condition
     const lockKey = `ride:lock:${rideId}`;
     const lockValue = `${driverId}:${Date.now()}`;
-    const acquired = await this.redis.acquireLock(lockKey, lockValue, 30);
+    const acquired = await this.redis.acquireLock(lockKey, lockValue, 60);
 
     if (!acquired) {
       throw new ConflictException('This ride is being processed by another driver');

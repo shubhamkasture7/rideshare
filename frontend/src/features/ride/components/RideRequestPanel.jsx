@@ -33,7 +33,8 @@ import mapService from '../../map/services/mapService';
 import useMapPosition from '../../map/hooks/useMapPosition';
 
 // Approximate fare in ETH (for local Hardhat testing: 0.01 ETH ≈ ₹2300)
-const FARE_ETH = 0.01;
+// Set fare to 0 for free rides (testing/dev mode)
+const FARE_ETH = 0;
 
 const RideRequestPanel = () => {
   const {
@@ -101,27 +102,30 @@ const RideRequestPanel = () => {
     e.preventDefault();
     if (!pickup || !drop) return;
 
-    if (!walletConnected) {
-      showNotification('Wallet connection is required for Trust Escrow on all rides.', 'info');
+    // Generate a unique ID for both Blockchain and Backend
+    const rideId = crypto.randomUUID();
+    const isEthPayment = paymentMethod === 'ETH';
+
+    if (isEthPayment && !walletConnected) {
+      showNotification('Wallet connection is required for Ethereum payments.', 'info');
       return;
     }
 
-    // Generate a unique ID for both Blockchain and Backend
-    const rideId = crypto.randomUUID();
-
-    setIsBlockchainTx(true);
+    setIsBlockchainTx(isEthPayment);
     try {
-      // Step 1: Secure funds on Ethereum first
-      showNotification('Step 1/2: Securing Trust Lock on-chain...', 'info');
-      await createRideOnChain(
-        rideId,
-        pickup.address,
-        drop.address,
-        parseFloat(dynamicEthFare)
-      );
-
-      // Step 2: Once confirmed, broadcast to drivers via Backend
-      showNotification('Step 2/2: Broadcasting ride request...', 'success');
+      if (isEthPayment) {
+        // Step 1: Secure funds on Ethereum first
+        showNotification('Step 1/2: Securing Trust Lock on-chain...', 'info');
+        await createRideOnChain(
+          rideId,
+          pickup.address,
+          drop.address,
+          parseFloat(dynamicEthFare)
+        );
+        showNotification('Step 2/2: Broadcasting ride request...', 'success');
+      } else {
+        showNotification('Broadcasting ride request...', 'info');
+      }
       
       const rideData = {
         id: rideId,
@@ -136,7 +140,6 @@ const RideRequestPanel = () => {
       await createRide(rideData);
     } catch (err) {
       console.error('Booking error:', err);
-      // createRideOnChain already handles its own notifications
     } finally {
       setIsBlockchainTx(false);
     }
@@ -154,8 +157,8 @@ const RideRequestPanel = () => {
         cursor: isIdle ? 'pointer' : 'default',
         borderRadius: 2,
         border: '1px solid',
-        borderColor: paymentMethod === method ? '#6C5CE7' : alpha('#fff', 0.1),
-        background: paymentMethod === method ? alpha('#6C5CE7', 0.1) : 'transparent',
+        borderColor: paymentMethod === method ? '#FF6B00' : alpha('#000', 0.1),
+        background: paymentMethod === method ? alpha('#FF6B00', 0.08) : 'transparent',
         transition: 'all 0.2s',
         display: 'flex',
         flexDirection: 'column',
@@ -163,9 +166,10 @@ const RideRequestPanel = () => {
         gap: 0.5,
         opacity: isIdle ? 1 : 0.7,
         '&:hover': {
-          borderColor: isIdle ? '#6C5CE7' : alpha('#fff', 0.1),
-          background: isIdle ? alpha('#6C5CE7', 0.05) : 'transparent',
+          borderColor: isIdle ? '#FF6B00' : alpha('#000', 0.1),
+          background: isIdle ? alpha('#FF6B00', 0.05) : 'transparent',
         }
+
       }}
     >
       {icon}
@@ -177,9 +181,10 @@ const RideRequestPanel = () => {
   return (
     <GlassCard
       title="Request a Ride"
-      icon={<LocalTaxi />}
-      gradient="linear-gradient(135deg, #6C5CE7, #A29BFE)"
+      icon={<LocalTaxi sx={{ color: '#FF6B00' }} />}
+      gradient="linear-gradient(135deg, #FF6B00, #FF8533)"
     >
+
       {/* Wallet Connection - Mandatory for Trust Lock */}
       <Box sx={{ mb: 2 }}>
         <WalletConnect compact={walletConnected} />
@@ -209,10 +214,11 @@ const RideRequestPanel = () => {
                 fontSize: '11px',
                 height: '28px',
                 borderRadius: '14px',
-                bgcolor: alpha('#6C5CE7', 0.1),
+                bgcolor: alpha('#FF6B00', 0.1),
                 zIndex: 2,
-                '&:hover': { bgcolor: alpha('#6C5CE7', 0.2) }
+                '&:hover': { bgcolor: alpha('#FF6B00', 0.2) }
               }}
+
             >
               Current
             </Button>
@@ -260,31 +266,34 @@ const RideRequestPanel = () => {
               />
               <PaymentOption 
                 method="ETH"
-                icon={<AccountBalanceWallet sx={{ color: '#A29BFE' }} />}
+                icon={<AccountBalanceWallet sx={{ color: '#FF6B00' }} />}
                 label="Ethereum"
                 sublabel={`${dynamicEthFare} ETH`}
               />
+
             </Stack>
           </Collapse>
 
-          {/* Blockchain payment preview - Always show as it's now a mandatory trust lock */}
-          {pickup && drop && (
+          {/* Blockchain payment preview - Only show for ETH */}
+          {paymentMethod === 'ETH' && pickup && drop && (
             <Box
               sx={{
                 mb: 2,
-                p: 1.5,
-                borderRadius: 2,
-                background: alpha('#6C5CE7', 0.06),
-                border: `1px solid ${alpha('#6C5CE7', 0.2)}`,
+                p: 2,
+                borderRadius: 3,
+                background: alpha('#FF6B00', 0.05),
+                border: `1px solid ${alpha('#FF6B00', 0.15)}`,
               }}
+
             >
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Lock sx={{ fontSize: 16, color: '#A29BFE' }} />
-                <Typography variant="caption" color="text.secondary">
-                  <strong style={{ color: '#A29BFE' }}>{dynamicEthFare} ETH</strong> will be 
-                  locked as a <strong style={{ color: '#A29BFE' }}>{paymentMethod === 'ETH' ? 'Payment Escrow' : 'Trust Lock'}</strong>.
+              <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+                <Lock sx={{ fontSize: 18, color: '#FF6B00' }} />
+                <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                  <strong style={{ color: '#FF6B00' }}>{dynamicEthFare} ETH</strong> will be 
+                  locked as a <strong style={{ color: '#FF6B00' }}>Payment Escrow</strong>.
                 </Typography>
               </Stack>
+
             </Box>
           )}
 
@@ -295,21 +304,27 @@ const RideRequestPanel = () => {
             size="large"
             disabled={isBusy || !pickup || !drop}
             sx={{
-              py: 1.5,
-              background: 'linear-gradient(135deg, #6C5CE7, #00B894)',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+              py: 2,
+              borderRadius: 3,
+              fontSize: '1rem',
+              fontWeight: 800,
+              background: 'linear-gradient(135deg, #FF6B00, #FF8533)',
+              boxShadow: '0 8px 20px rgba(255, 107, 0, 0.25)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #5B4BC4, #00A383)',
+                background: 'linear-gradient(135deg, #E66000, #FF6B00)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 12px 24px rgba(255, 107, 0, 0.35)',
               }
             }}
+
           >
             {isLoading ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
               <Stack direction="row" spacing={1} alignItems="center">
-                <Lock sx={{ fontSize: 18 }} />
+                {paymentMethod === 'ETH' ? <Lock sx={{ fontSize: 18 }} /> : <LocalTaxi sx={{ fontSize: 18 }} />}
                 <span>
-                  {paymentMethod === 'ETH' ? 'Book & Lock Payment' : 'Request with Trust Lock'}
+                  {paymentMethod === 'ETH' ? 'Book & Lock Payment' : 'Request Ride'}
                 </span>
               </Stack>
             )}

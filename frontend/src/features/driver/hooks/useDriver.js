@@ -11,28 +11,37 @@ const useDriver = () => {
     incomingRide,
     assignedRide,
     earnings,
-    rideHistory,
     isLoading,
     toggleOnline,
     setOnline,
     updatePosition,
     acceptRide,
+    setAssignedRide,
     rejectRide,
     startRide,
     completeRide,
     setLoading,
+    rideHistory,
   } = useDriverStore();
 
   const { showNotification } = useNotificationStore();
   const locationIntervalRef = useRef(null);
 
-  // Blockchain integration
   const {
     walletConnected,
     acceptRideOnChain,
     startRideOnChain,
     completeRideOnChain,
   } = useBlockchain();
+
+  const fetchEarnings = useCallback(async () => {
+    try {
+      const data = await driverService.getEarnings();
+      return data;
+    } catch (err) {
+      showNotification('Failed to fetch earnings', 'error');
+    }
+  }, [showNotification]);
 
   // Send periodic location updates via WebSocket when online
   const positionRef = useRef(currentPosition);
@@ -85,6 +94,33 @@ const useDriver = () => {
     };
   }, [isOnline, updatePosition]);
 
+  // Initial data fetch and location initialization
+  useEffect(() => {
+    const init = async () => {
+      // 1. Fetch initial device location immediately
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            updatePosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          },
+          (err) => console.warn('Initial geolocation error:', err),
+          { enableHighAccuracy: true }
+        );
+      }
+
+      try {
+        const activeRide = await driverService.getActiveRide();
+        if (activeRide) {
+          setAssignedRide(activeRide);
+        }
+        await fetchEarnings();
+      } catch (err) {
+        console.error('Failed to init driver data:', err);
+      }
+    };
+    init();
+  }, [updatePosition, setAssignedRide, fetchEarnings]);
+
   const handleToggleOnline = useCallback(async () => {
     try {
       const newStatus = !isOnline;
@@ -101,18 +137,20 @@ const useDriver = () => {
     setLoading(true);
     try {
       // 1. Accept off-chain (Backend)
-      await driverService.acceptRide(incomingRide.id);
+      const result = await driverService.acceptRide(incomingRide.id);
       
-      // 2. Accept on-chain (Blockchain) if wallet is connected
-      if (walletConnected) {
+      // 2. Accept on-chain (Blockchain) if ETH payment and wallet is connected
+      const isEthRide = (incomingRide.paymentMethod === 'ETH');
+      if (walletConnected && isEthRide) {
         try {
-          await acceptRideOnChain(incomingRide.id);
+          const isFree = incomingRide.estimatedFare === 0;
+          await acceptRideOnChain(incomingRide.id, isFree);
         } catch (bcErr) {
           showNotification('On-chain acceptance failed, but ride is assigned.', 'warning');
         }
       }
 
-      acceptRide();
+      acceptRide(result.ride || result);
       showNotification('Ride accepted!', 'success');
     } catch (err) {
       showNotification(err.message || 'Failed to accept ride', 'error');
@@ -132,10 +170,12 @@ const useDriver = () => {
       // 1. Start off-chain (Backend)
       await driverService.startRide(assignedRide.id);
 
-      // 2. Start on-chain (Blockchain)
-      if (walletConnected) {
+      // 2. Start on-chain (Blockchain) if ETH payment
+      const isEthRide = (assignedRide.paymentMethod === 'ETH');
+      if (walletConnected && isEthRide) {
         try {
-          await startRideOnChain(assignedRide.id);
+          const isFree = assignedRide.estimatedFare === 0;
+          await startRideOnChain(assignedRide.id, isFree);
         } catch (bcErr) {
           showNotification('On-chain record failed. Proceeding...', 'warning');
         }
@@ -155,11 +195,13 @@ const useDriver = () => {
       const result = await driverService.completeRide(assignedRide.id);
       const fare = result?.fare || result?.ride?.actualFare || 0;
 
-      // 2. Release Escrow on-chain (Blockchain)
-      if (walletConnected) {
+      // 2. Release Escrow on-chain (Blockchain) if ETH payment
+      const isEthRide = (assignedRide.paymentMethod === 'ETH');
+      if (walletConnected && isEthRide) {
         try {
           showNotification('Releasing payment from smart contract...', 'info');
-          await completeRideOnChain(assignedRide.id);
+          const isFree = assignedRide.estimatedFare === 0;
+          await completeRideOnChain(assignedRide.id, isFree);
         } catch (bcErr) {
           showNotification('Payment release failed on blockchain. Please contact support.', 'error');
         }
@@ -172,14 +214,7 @@ const useDriver = () => {
     }
   }, [assignedRide, completeRide, showNotification, walletConnected, completeRideOnChain]);
 
-  const fetchEarnings = useCallback(async () => {
-    try {
-      const data = await driverService.getEarnings();
-      return data;
-    } catch (err) {
-      showNotification('Failed to fetch earnings', 'error');
-    }
-  }, [showNotification]);
+
 
   return {
     isOnline,

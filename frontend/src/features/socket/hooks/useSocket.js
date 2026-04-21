@@ -71,6 +71,7 @@ const useSocket = () => {
 
     // ---- Driver-side events ----
     socket.on('ride.broadcast', (data) => {
+      console.log('🚗 [Socket] Received ride.broadcast:', data);
       setIncomingRide(data.ride);
       showNotification('New ride request!', 'warning');
     });
@@ -112,12 +113,18 @@ const useSocket = () => {
     [emitEvent]
   );
 
+  const sendRiderLocationUpdate = useCallback(
+    (position) => emitEvent('rider.location.update', { position }),
+    [emitEvent]
+  );
+
   return {
     socket: socketRef.current,
     emitEvent,
     requestRide,
     acceptRide,
     sendLocationUpdate,
+    sendRiderLocationUpdate,
     cancelRide,
   };
 };

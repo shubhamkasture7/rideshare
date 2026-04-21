@@ -47,21 +47,30 @@ const AssignedRideCard = ({ ride, onStartRide, onCompleteRide }) => {
 
       {/* Rider Info */}
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-        <Avatar sx={{ bgcolor: 'secondary.main', width: 44, height: 44 }}>
-          {ride.riderName?.[0] || 'R'}
+        <Avatar 
+          src={ride.rider?.avatar} 
+          sx={{ bgcolor: 'secondary.main', width: 44, height: 44 }}
+        >
+          {ride.rider?.name?.[0] || 'R'}
         </Avatar>
         <Box sx={{ flex: 1 }}>
           <Typography variant="body1" fontWeight={600}>
-            {ride.riderName || 'Rider'}
+            {ride.rider?.name || 'Rider'}
           </Typography>
           <Stack direction="row" spacing={0.5} alignItems="center">
             <Star sx={{ fontSize: 14, color: 'warning.main' }} />
             <Typography variant="caption" color="text.secondary">
-              {ride.riderRating || '4.5'}
+              {ride.rider?.rating || '4.5'}
             </Typography>
           </Stack>
         </Box>
-        <Button variant="outlined" size="small" startIcon={<Phone />} sx={{ borderRadius: 2 }}>
+        <Button 
+          variant="outlined" 
+          size="small" 
+          href={`tel:${ride.rider?.phone}`}
+          startIcon={<Phone />} 
+          sx={{ borderRadius: 2 }}
+        >
           Call
         </Button>
       </Stack>

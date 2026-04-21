@@ -29,28 +29,37 @@ const useRideStore = create((set, get) => ({
   setRideStatus: (status) => set({ rideStatus: status }),
 
   requestRide: (rideData) => {
+    // Normalize data structure
+    const normalizedRide = {
+      id: rideData.id || `ride_${Date.now()}`,
+      pickup: rideData.pickup || { lat: rideData.pickupLat, lng: rideData.pickupLng, address: rideData.pickupAddress },
+      drop: rideData.drop || { lat: rideData.dropLat, lng: rideData.dropLng, address: rideData.dropAddress },
+      createdAt: new Date().toISOString(),
+      ...rideData,
+    };
+
     set({
-      currentRide: {
-        id: `ride_${Date.now()}`,
-        pickup: rideData.pickup,
-        drop: rideData.drop,
-        createdAt: new Date().toISOString(),
-        ...rideData,
-      },
+      currentRide: normalizedRide,
       rideStatus: RIDE_STATUS.REQUESTED,
       isLoading: false,
     });
   },
 
   rideAccepted: (driverInfo) => {
-    set((state) => ({
+    const state = get();
+    // Try to find driver's last known position from nearbyDrivers list
+    const lastPos = state.nearbyDrivers.find(d => d.id === driverInfo.id)?.position;
+    
+    set({
       currentRide: {
         ...state.currentRide,
         driver: driverInfo,
+        driverId: driverInfo.id,
         acceptedAt: new Date().toISOString(),
       },
       rideStatus: RIDE_STATUS.ACCEPTED,
-    }));
+      activeDriverPosition: lastPos || state.activeDriverPosition,
+    });
   },
 
   rideStarted: () => {
@@ -88,13 +97,19 @@ const useRideStore = create((set, get) => ({
   setNearbyDrivers: (drivers) => set({ nearbyDrivers: drivers }),
 
   updateDriverPosition: (driverId, position) => {
+    // Normalize position to [lat, lng]
+    const pos = Array.isArray(position) ? position : [position.lat, position.lng];
+    
     set((state) => {
-      const isAssignedDriver = state.currentRide?.driver?.id === driverId;
+      // Check if this is our assigned driver
+      const assignedDriverId = state.currentRide?.driver?.id || state.currentRide?.driverId;
+      const isAssignedDriver = assignedDriverId === driverId;
+      
       return {
         nearbyDrivers: state.nearbyDrivers.map((d) =>
-          d.id === driverId ? { ...d, position } : d
+          d.id === driverId ? { ...d, position: pos } : d
         ),
-        ...(isAssignedDriver ? { activeDriverPosition: position } : {}),
+        ...(isAssignedDriver ? { activeDriverPosition: pos } : {}),
       };
     });
   },

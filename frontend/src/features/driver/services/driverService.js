@@ -136,6 +136,10 @@ const driverService = {
   getRideHistory: async () => {
     return (await api.get('/driver/rides/history')).data;
   },
+  
+  getActiveRide: async () => {
+    return (await api.get('/driver/rides/active')).data;
+  },
 };
 
 export default driverService;

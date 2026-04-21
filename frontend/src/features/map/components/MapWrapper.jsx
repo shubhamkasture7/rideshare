@@ -42,6 +42,8 @@ const MapWrapper = ({
   children,
   height = '100%',
   sx = {},
+  onLoad,
+  onUnmount,
 }) => {
   const showNotification = useNotificationStore((s) => s.showNotification);
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -121,6 +123,8 @@ const MapWrapper = ({
           center={mapCenter}
           zoom={zoom}
           options={options}
+          onLoad={onLoad}
+          onUnmount={onUnmount}
         >
           {children}
         </GoogleMap>

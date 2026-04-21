@@ -21,11 +21,11 @@ import {
 import Modal from '../../../components/common/Modal';
 
 const IncomingRideDialog = ({ ride, onAccept, onReject, isLoading }) => {
-  const [timeLeft, setTimeLeft] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(60);
 
   useEffect(() => {
     if (!ride) {
-      setTimeLeft(30);
+      setTimeLeft(60);
       return;
     }
 
@@ -66,7 +66,7 @@ const IncomingRideDialog = ({ ride, onAccept, onReject, isLoading }) => {
         </Stack>
         <LinearProgress
           variant="determinate"
-          value={(timeLeft / 30) * 100}
+          value={(timeLeft / 60) * 100}
           color={timeLeft <= 10 ? 'error' : 'warning'}
           sx={{ borderRadius: 2, height: 4 }}
         />

@@ -98,19 +98,29 @@ const LiveMarker = ({
 
   useEffect(() => {
     const target = Array.isArray(position) ? { lat: position[0], lng: position[1] } : position;
+    
+    if (!target || typeof target.lat !== 'number' || typeof target.lng !== 'number') return;
+
+    if (!prevPositionRef.current) {
+      setCurrentPos(target);
+      prevPositionRef.current = target;
+      return;
+    }
+
     const start = Array.isArray(prevPositionRef.current) 
       ? { lat: prevPositionRef.current[0], lng: prevPositionRef.current[1] } 
       : prevPositionRef.current;
 
     if (start.lat !== target.lat || start.lng !== target.lng) {
       const newBearing = calculateBearing(start, target);
-      if (Math.abs(newBearing - rotation) > 1) { // Avoid micro-rotations
+      if (Math.abs(newBearing - rotation) > 1) { 
         setRotation(newBearing);
       }
     }
     
     if (!animate) {
       setCurrentPos(target);
+      prevPositionRef.current = target;
       return;
     }
 

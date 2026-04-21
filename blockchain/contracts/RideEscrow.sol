@@ -137,7 +137,6 @@ contract RideEscrow {
         string calldata pickupHash,
         string calldata dropHash
     ) external payable {
-        require(msg.value > 0, "Fare must be greater than 0");
         require(rides[rideId].status == RideStatus.NONE, "Ride ID already exists");
         require(bytes(pickupHash).length > 0, "Pickup hash required");
         require(bytes(dropHash).length > 0, "Drop hash required");
