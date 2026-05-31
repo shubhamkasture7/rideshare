@@ -63,6 +63,14 @@ class DriverController {
   async getEarnings(req) {
     return this.driverService.getEarnings(req.user.id);
   }
+  
+  @Get('rides/active')
+  @Roles('DRIVER')
+  @Bind(Req())
+  @ApiOperation({ summary: 'Get driver active ride' })
+  async getActiveRide(req) {
+    return this.driverService.getActiveRide(req.user.id);
+  }
 }
 
 module.exports = { DriverController };

@@ -68,11 +68,12 @@ const ActiveRideCard = () => {
       title="Active Ride"
       gradient={`linear-gradient(135deg, ${
         rideStatus === RIDE_STATUS.ONGOING
-          ? '#6C5CE7, #A29BFE'
+          ? '#FF6B00, #FF8533'
           : rideStatus === RIDE_STATUS.COMPLETED
-          ? '#00B894, #55EFC4'
-          : '#FDCB6E, #FD79A8'
+          ? '#10B981, #34D399'
+          : '#F59E0B, #FFB01F'
       })`}
+
     >
       {/* Status Badge */}
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
@@ -151,7 +152,7 @@ const ActiveRideCard = () => {
       {currentRide.driver && rideStatus !== RIDE_STATUS.REQUESTED && (
         <>
           <Divider sx={{ my: 2 }} />
-          <Stack direction="row" alignItems="center" spacing={2}>
+          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
             <Avatar
               sx={{
                 bgcolor: 'primary.main',
@@ -198,9 +199,10 @@ const ActiveRideCard = () => {
           <Typography variant="caption" color="text.secondary">
             Estimated Fare
           </Typography>
-          <Typography variant="h5" fontWeight={700} color="primary.light">
+          <Typography variant="h5" fontWeight={800} color="primary.main">
             ₹{estimatedFare}
           </Typography>
+
         </Box>
       )}
 

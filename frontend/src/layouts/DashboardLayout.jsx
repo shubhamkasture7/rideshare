@@ -33,16 +33,20 @@ import {
   Settings,
   DarkMode,
   ChevronLeft,
+  Shield,
+  AccountBalanceWallet,
 } from '@mui/icons-material';
 import useAuth from '../features/auth/hooks/useAuth';
+import WalletConnect from '../features/blockchain/components/WalletConnect';
 
 const DRAWER_WIDTH = 260;
 
 const riderNav = [
   { label: 'Dashboard', icon: <Dashboard />, path: '/rider/dashboard' },
-  { label: 'Map', icon: <Map />, path: '/rider/dashboard' },
-  { label: 'Ride History', icon: <History />, path: '/rider/dashboard' },
-  { label: 'Profile', icon: <Person />, path: '/rider/dashboard' },
+  { label: 'Map History', icon: <Map />, path: '/rider/map' },
+  { label: 'Ride History', icon: <History />, path: '/rider/history' },
+  { label: 'Profile', icon: <Person />, path: '/rider/profile' },
+  { label: 'Blockchain', icon: <Shield />, path: '/rider/blockchain', chip: 'Web3' },
 ];
 
 const driverNav = [
@@ -50,12 +54,14 @@ const driverNav = [
   { label: 'Map', icon: <Map />, path: '/driver/dashboard' },
   { label: 'Earnings', icon: <History />, path: '/driver/dashboard' },
   { label: 'Profile', icon: <Person />, path: '/driver/dashboard' },
+  { label: 'Blockchain', icon: <Shield />, path: '/driver/blockchain', chip: 'Web3' },
 ];
 
 const DashboardLayout = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
   const { user, logout, isRider } = useAuth();
   const location = useLocation();
 
@@ -71,26 +77,26 @@ const DashboardLayout = () => {
       }}
     >
       {/* Brand Header */}
-      <Box sx={{ px: 2.5, py: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Box sx={{ px: 2.5, py: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
         <Box
           sx={{
-            width: 40,
-            height: 40,
-            borderRadius: 2,
-            background: 'linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%)',
+            width: 44,
+            height: 44,
+            borderRadius: 2.5,
+            background: 'linear-gradient(135deg, #FF6B00 0%, #FF8533 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
+            boxShadow: '0 4px 12px rgba(255, 107, 0, 0.3)',
           }}
         >
-          <DirectionsCar sx={{ fontSize: 22, color: '#fff' }} />
+          <DirectionsCar sx={{ fontSize: 24, color: '#fff' }} />
         </Box>
         <Box>
-          <Typography variant="subtitle1" fontWeight={700} color="text.primary">
-            RideSharing
+          <Typography variant="h6" fontWeight={800} color="text.primary" sx={{ lineHeight: 1.2 }}>
+            RideShare
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" color="primary.main" fontWeight={700} sx={{ letterSpacing: 0.5, textTransform: 'uppercase' }}>
             Decentralized
           </Typography>
         </Box>
@@ -101,10 +107,10 @@ const DashboardLayout = () => {
         )}
       </Box>
 
-      <Divider sx={{ mx: 2, mb: 1 }} />
+      <Divider sx={{ mx: 2, mb: 1, opacity: 0.6 }} />
 
       {/* Nav Items */}
-      <List sx={{ flex: 1, px: 1 }}>
+      <List sx={{ flex: 1, px: 1.5 }}>
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -112,74 +118,118 @@ const DashboardLayout = () => {
               <ListItemButton
                 selected={isActive}
                 onClick={() => {
+                  navigate(item.path);
                   if (isMobile) setMobileOpen(false);
                 }}
                 sx={{
-                  borderRadius: 2,
-                  py: 1.5,
+                  borderRadius: 3,
+                  py: 1.2,
+                  '&.Mui-selected': {
+                    background: alpha('#FF6B00', 0.08),
+                    '&:hover': { background: alpha('#FF6B00', 0.12) },
+                    '& .MuiListItemIcon-root': { color: 'primary.main' },
+                    '& .MuiListItemText-primary': { color: 'primary.main', fontWeight: 700 },
+                  },
                 }}
               >
                 <ListItemIcon
                   sx={{
-                    minWidth: 40,
-                    color: isActive ? 'primary.main' : 'text.secondary',
+                    minWidth: 38,
+                    color: isActive ? 'primary.main' : item.chip ? 'primary.light' : 'text.secondary',
                   }}
                 >
                   {item.icon}
                 </ListItemIcon>
                 <ListItemText
                   primary={item.label}
-                  primaryTypographyProps={{
-                    fontSize: '0.9rem',
-                    fontWeight: isActive ? 600 : 400,
+                  slotProps={{
+                    primary: {
+                      fontSize: '0.9rem',
+                      fontWeight: isActive ? 700 : 500,
+                      color: isActive ? 'primary.main' : 'inherit',
+                    },
                   }}
                 />
+                {item.chip && (
+                  <Chip
+                    label={item.chip}
+                    size="small"
+                    sx={{
+                      height: 18,
+                      fontSize: '0.6rem',
+                      fontWeight: 800,
+                      background: alpha('#FF6B00', 0.1),
+                      color: 'primary.main',
+                      border: `1px solid ${alpha('#FF6B00', 0.2)}`,
+                    }}
+                  />
+                )}
               </ListItemButton>
             </ListItem>
           );
         })}
       </List>
 
-      <Divider sx={{ mx: 2 }} />
+      <Divider sx={{ mx: 2, opacity: 0.6 }} />
 
       {/* User Section */}
       <Box sx={{ p: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
-          <Avatar
-            sx={{
-              width: 38,
-              height: 38,
-              bgcolor: isRider ? 'primary.main' : 'secondary.main',
-              fontSize: 16,
-              fontWeight: 700,
-            }}
-          >
-            {user?.name?.[0] || 'U'}
-          </Avatar>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="body2" fontWeight={600} noWrap>
-              {user?.name || 'User'}
-            </Typography>
-            <Chip
-              label={user?.role || 'RIDER'}
-              size="small"
-              color={isRider ? 'primary' : 'secondary'}
-              sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600 }}
-            />
-          </Box>
-        </Stack>
+        <Box 
+          sx={{ 
+            p: 1.5, 
+            borderRadius: 3, 
+            background: alpha('#000', 0.02),
+            border: '1px solid',
+            borderColor: alpha('#000', 0.05),
+            mb: 1.5 
+          }}
+        >
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+            <Avatar
+              sx={{
+                width: 40,
+                height: 40,
+                background: isRider ? 'linear-gradient(135deg, #FF6B00, #FF8533)' : 'linear-gradient(135deg, #1A202C, #2D3748)',
+                color: '#fff',
+                fontSize: 16,
+                fontWeight: 700,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              }}
+            >
+              {user?.name?.[0] || 'U'}
+            </Avatar>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" fontWeight={700} color="text.primary" noWrap>
+                {user?.name || 'User'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                {user?.role || 'RIDER'}
+              </Typography>
+            </Box>
+          </Stack>
+        </Box>
         <Button
           fullWidth
           variant="outlined"
-          size="small"
-          color="error"
+          size="medium"
+          color="inherit"
           startIcon={<Logout />}
           onClick={logout}
-          sx={{ borderRadius: 2 }}
+          sx={{ 
+            borderRadius: 3, 
+            borderColor: alpha('#000', 0.1),
+            color: 'text.secondary',
+            '&:hover': {
+              borderColor: 'error.main',
+              color: 'error.main',
+              background: alpha('#EF4444', 0.04),
+            }
+          }}
         >
           Sign Out
         </Button>
       </Box>
+
     </Box>
   );
 
@@ -205,6 +255,9 @@ const DashboardLayout = () => {
           <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
             {isRider ? 'Rider' : 'Driver'} Dashboard
           </Typography>
+          <Box sx={{ mr: 1 }}>
+            <WalletConnect compact />
+          </Box>
           <Tooltip title="Dark Mode">
             <IconButton color="inherit">
               <DarkMode />

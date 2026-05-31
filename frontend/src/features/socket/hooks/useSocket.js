@@ -60,12 +60,18 @@ const useSocket = () => {
     });
 
     socket.on('ride.created', (data) => {
-      // Confirmation that ride was created via socket
-      // The ride store is already updated by the REST call
+      if (data.ride) {
+        useRideStore.getState().requestRide({
+          ...data.ride,
+          pickup: { lat: data.ride.pickupLat, lng: data.ride.pickupLng, address: data.ride.pickupAddress },
+          drop: { lat: data.ride.dropLat, lng: data.ride.dropLng, address: data.ride.dropAddress },
+        });
+      }
     });
 
     // ---- Driver-side events ----
     socket.on('ride.broadcast', (data) => {
+      console.log('🚗 [Socket] Received ride.broadcast:', data);
       setIncomingRide(data.ride);
       showNotification('New ride request!', 'warning');
     });
@@ -107,12 +113,18 @@ const useSocket = () => {
     [emitEvent]
   );
 
+  const sendRiderLocationUpdate = useCallback(
+    (position) => emitEvent('rider.location.update', { position }),
+    [emitEvent]
+  );
+
   return {
     socket: socketRef.current,
     emitEvent,
     requestRide,
     acceptRide,
     sendLocationUpdate,
+    sendRiderLocationUpdate,
     cancelRide,
   };
 };

@@ -39,6 +39,13 @@ class RideController {
   async getRideHistory(req) {
     return this.rideService.getRideHistory(req.user.id, req.user.role);
   }
+  
+  @Get('recommendations')
+  @Bind(Req())
+  @ApiOperation({ summary: 'Get recommended locations' })
+  async getRecommendations(req) {
+    return this.rideService.getRecommendations(req.user.id);
+  }
 
   @Get(':id')
   @Bind(Req())

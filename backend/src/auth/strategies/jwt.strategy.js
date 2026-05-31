@@ -1,9 +1,10 @@
-const { Injectable, UnauthorizedException } = require('@nestjs/common');
+const { Injectable, UnauthorizedException, Dependencies } = require('@nestjs/common');
 const { PassportStrategy } = require('@nestjs/passport');
 const { Strategy, ExtractJwt } = require('passport-jwt');
 const { PrismaService } = require('../../prisma/prisma.service');
 
 @Injectable()
+@Dependencies(PrismaService)
 class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(prisma) {
     super({

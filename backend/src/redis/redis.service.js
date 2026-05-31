@@ -81,7 +81,7 @@ class RedisService {
         'GEOSEARCH',
         'drivers:locations',
         'FROMLONLAT', lng, lat,
-        'BYRADIUS', radiusKm * 1000, 'm',
+        'BYRADIUS', radiusKm, 'km',
         'ASC',
         'COUNT', count,
         'WITHCOORD',

@@ -49,8 +49,8 @@ const SignupForm = () => {
         alignItems: 'center',
         justifyContent: 'center',
         background: (theme) =>
-          `radial-gradient(ellipse at 80% 50%, ${alpha(theme.palette.secondary.main, 0.15)} 0%, transparent 50%),
-           radial-gradient(ellipse at 20% 80%, ${alpha(theme.palette.primary.main, 0.1)} 0%, transparent 50%),
+          `radial-gradient(ellipse at 80% 50%, ${alpha(theme.palette.primary.main, 0.1)} 0%, transparent 50%),
+           radial-gradient(ellipse at 20% 80%, ${alpha(theme.palette.primary.main, 0.08)} 0%, transparent 50%),
            ${theme.palette.background.default}`,
         p: 2,
       }}
@@ -61,32 +61,34 @@ const SignupForm = () => {
         sx={{
           width: '100%',
           maxWidth: 440,
-          p: 5,
-          borderRadius: 4,
-          background: (theme) => alpha(theme.palette.background.paper, 0.7),
-          backdropFilter: 'blur(24px)',
-          border: (theme) => `1px solid ${alpha(theme.palette.common.white, 0.08)}`,
-          boxShadow: '0 24px 80px rgba(0,0,0,0.4)',
+          p: { xs: 4, md: 6 },
+          borderRadius: 5,
+          background: '#FFFFFF',
+          border: '1px solid',
+          borderColor: alpha('#000', 0.05),
+          boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
         }}
       >
+
         {/* Logo */}
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Box
             sx={{
-              width: 60,
-              height: 60,
+              width: 64,
+              height: 64,
               borderRadius: 3,
-              background: 'linear-gradient(135deg, #00CEC9 0%, #55EFC4 100%)',
+              background: 'linear-gradient(135deg, #FF6B00 0%, #FF8533 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               mx: 'auto',
               mb: 2,
-              boxShadow: '0 8px 24px rgba(0, 206, 201, 0.4)',
+              boxShadow: '0 8px 24px rgba(255, 107, 0, 0.3)',
             }}
           >
-            <DirectionsCar sx={{ fontSize: 32, color: '#0A0E1A' }} />
+            <DirectionsCar sx={{ fontSize: 36, color: '#fff' }} />
           </Box>
+
           <Typography variant="h4" fontWeight={800} gutterBottom>
             Join RideSharing
           </Typography>
@@ -120,16 +122,14 @@ const SignupForm = () => {
                 textTransform: 'none',
                 fontWeight: 600,
                 '&.Mui-selected': {
-                  background: (theme) =>
-                    formData.role === 'RIDER'
-                      ? alpha(theme.palette.primary.main, 0.15)
-                      : alpha(theme.palette.secondary.main, 0.15),
-                  borderColor: formData.role === 'RIDER' ? 'primary.main' : 'secondary.main',
-                  color: formData.role === 'RIDER' ? 'primary.light' : 'secondary.light',
+                  background: (theme) => alpha(theme.palette.primary.main, 0.1),
+                  borderColor: 'primary.main',
+                  color: 'primary.main',
                 },
               },
             }}
           >
+
             <ToggleButton value="RIDER">
               <Hail sx={{ mr: 1 }} /> Ride
             </ToggleButton>
@@ -225,9 +225,14 @@ const SignupForm = () => {
 
         <Typography variant="body2" align="center" color="text.secondary">
           Already have an account?{' '}
-          <Link component={RouterLink} to="/login" sx={{ fontWeight: 600, color: 'primary.light' }}>
+          <Link 
+            component={RouterLink} 
+            to="/login" 
+            sx={{ fontWeight: 700, color: 'primary.main', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+          >
             Sign In
           </Link>
+
         </Typography>
       </Box>
     </Box>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Box,
   Grid,
@@ -19,8 +19,8 @@ import AssignedRideCard from './AssignedRideCard';
 import IncomingRideDialog from './IncomingRideDialog';
 import MapWrapper from '../../map/components/MapWrapper';
 import LiveMarker from '../../map/components/LiveMarker';
+import RouteRenderer from '../../map/components/RouteRenderer';
 import useDriver from '../hooks/useDriver';
-import useDriverStore from '../store/driverStore';
 import useSocket from '../../socket/hooks/useSocket';
 
 const DriverDashboard = () => {
@@ -40,6 +40,30 @@ const DriverDashboard = () => {
   } = useDriver();
 
   const [mapReady, setMapReady] = useState(false);
+  const mapRef = useRef(null);
+
+  const onMapLoad = useCallback((map) => {
+    mapRef.current = map;
+  }, []);
+
+  // Update map view when position or ride changes
+  useEffect(() => {
+    if (!mapRef.current || !currentPosition || !window.google) return;
+
+    const bounds = new window.google.maps.LatLngBounds();
+    const pos = { lat: currentPosition.lat, lng: currentPosition.lng };
+
+    if (assignedRide?.pickup && assignedRide?.drop) {
+      // Fit all: driver + pickup + drop
+      bounds.extend(pos);
+      bounds.extend({ lat: assignedRide.pickup.lat, lng: assignedRide.pickup.lng });
+      bounds.extend({ lat: assignedRide.drop.lat, lng: assignedRide.drop.lng });
+      mapRef.current.fitBounds(bounds, { top: 70, right: 70, bottom: 70, left: 70 });
+    } else {
+      // Just center on driver
+      mapRef.current.panTo(pos);
+    }
+  }, [currentPosition, assignedRide]);
 
   // Initialize socket events
   useSocket();
@@ -49,61 +73,30 @@ const DriverDashboard = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Simulate incoming ride when online (demo)
-  useEffect(() => {
-    if (!isOnline || assignedRide || incomingRide) return;
-
-    const timer = setTimeout(() => {
-      const mockRide = {
-        id: `ride_${Date.now()}`,
-        riderName: 'Alex Rider',
-        riderRating: '4.8',
-        pickup: {
-          address: 'Connaught Place, New Delhi',
-          lat: 28.6315,
-          lng: 77.2167,
-        },
-        drop: {
-          address: 'India Gate, New Delhi',
-          lat: 28.6129,
-          lng: 77.2295,
-        },
-        estimatedFare: Math.floor(Math.random() * 300) + 100,
-        estimatedTime: Math.floor(Math.random() * 15) + 5,
-        pickupDistance: '1.5',
-      };
-
-      // Use the store directly
-      useDriverStore.getState().setIncomingRide(mockRide);
-    }, 8000);
-
-    return () => clearTimeout(timer);
-  }, [isOnline, assignedRide, incomingRide]);
-
   const statCards = [
     {
       label: "Today's Earnings",
-      value: `₹${earnings.today.toLocaleString()}`,
+      value: `₹${(earnings?.today || 0).toLocaleString()}`,
       icon: <TrendingUp />,
-      color: '#00B894',
+      color: '#10B981',
     },
     {
       label: 'Total Earnings',
-      value: `₹${earnings.total.toLocaleString()}`,
+      value: `₹${(earnings?.total || 0).toLocaleString()}`,
       icon: <TrendingUp />,
-      color: '#6C5CE7',
+      color: '#FF6B00',
     },
     {
       label: 'Rides Done',
       value: rideHistory.length.toString(),
       icon: <LocalTaxi />,
-      color: '#FDCB6E',
+      color: '#F59E0B',
     },
     {
       label: 'Rating',
       value: '4.9',
       icon: <Star />,
-      color: '#FD79A8',
+      color: '#3B82F6',
     },
   ];
 
@@ -159,13 +152,17 @@ const DriverDashboard = () => {
               <MapSkeleton />
             ) : (
               <Box sx={{ height: { xs: 280, md: 380 }, mt: -1 }}>
-                <MapWrapper center={currentPosition ? [currentPosition.lat, currentPosition.lng] : [28.6139, 77.209]} zoom={15}>
+                <MapWrapper 
+                  center={currentPosition ? { lat: currentPosition.lat, lng: currentPosition.lng } : { lat: 28.6139, lng: 77.209 }} 
+                  zoom={15}
+                  onLoad={onMapLoad}
+                >
                   {/* Driver marker */}
                   <LiveMarker
                     position={
                       currentPosition
-                        ? [currentPosition.lat, currentPosition.lng]
-                        : [28.6139, 77.209]
+                        ? { lat: currentPosition.lat, lng: currentPosition.lng }
+                        : { lat: 28.6139, lng: 77.209 }
                     }
                     type="driver"
                     popupContent="You are here"
@@ -175,16 +172,24 @@ const DriverDashboard = () => {
                   {/* Assigned ride markers */}
                   {assignedRide?.pickup && (
                     <LiveMarker
-                      position={[assignedRide.pickup.lat, assignedRide.pickup.lng]}
+                      position={{ lat: assignedRide.pickup.lat, lng: assignedRide.pickup.lng }}
                       type="pickup"
                       popupContent={`Pickup: ${assignedRide.pickup.address}`}
                     />
                   )}
                   {assignedRide?.drop && (
                     <LiveMarker
-                      position={[assignedRide.drop.lat, assignedRide.drop.lng]}
+                      position={{ lat: assignedRide.drop.lat, lng: assignedRide.drop.lng }}
                       type="drop"
                       popupContent={`Drop: ${assignedRide.drop.address}`}
+                    />
+                  )}
+
+                  {/* Route renderer for assigned ride */}
+                  {assignedRide?.pickup && assignedRide?.drop && (
+                    <RouteRenderer
+                      pickup={{ lat: assignedRide.pickup.lat, lng: assignedRide.pickup.lng }}
+                      drop={{ lat: assignedRide.drop.lat, lng: assignedRide.drop.lng }}
                     />
                   )}
                 </MapWrapper>
@@ -205,8 +210,8 @@ const DriverDashboard = () => {
             ) : (
               <GlassCard
                 title="Waiting for rides..."
-                icon={<LocalTaxi />}
-                gradient="linear-gradient(135deg, #00CEC9, #55EFC4)"
+                icon={<LocalTaxi sx={{ color: '#FF6B00' }} />}
+                gradient="linear-gradient(135deg, #FF6B00, #FF8533)"
               >
                 <Typography variant="body2" color="text.secondary">
                   {isOnline

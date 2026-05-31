@@ -28,8 +28,10 @@ const GlassCard = ({ title, subtitle, icon, children, action, sx, gradient, ...p
           title={title}
           subheader={subtitle}
           action={action}
-          titleTypographyProps={{ variant: 'h6', fontWeight: 600 }}
-          subheaderTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+          slotProps={{
+            title: { variant: 'h6', fontWeight: 600 },
+            subheader: { variant: 'body2' },
+          }}
         />
       )}
       <CardContent>{children}</CardContent>

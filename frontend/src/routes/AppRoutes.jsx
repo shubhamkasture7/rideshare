@@ -9,7 +9,11 @@ import DashboardLayout from '../layouts/DashboardLayout';
 const LoginForm = lazy(() => import('../features/auth/components/LoginForm'));
 const SignupForm = lazy(() => import('../features/auth/components/SignupForm'));
 const RiderDashboard = lazy(() => import('../features/ride/components/RiderDashboard'));
+const RideHistoryMap = lazy(() => import('../features/ride/components/RideHistoryMap'));
+const RideHistory = lazy(() => import('../features/ride/components/RideHistory'));
+const Profile = lazy(() => import('../features/user/components/Profile'));
 const DriverDashboard = lazy(() => import('../features/driver/components/DriverDashboard'));
+const BlockchainDashboard = lazy(() => import('../features/blockchain/components/BlockchainDashboard'));
 
 const PageLoader = () => (
   <Box
@@ -58,6 +62,10 @@ const AppRoutes = () => {
           }
         >
           <Route path="/rider/dashboard" element={<RiderDashboard />} />
+          <Route path="/rider/map" element={<RideHistoryMap />} />
+          <Route path="/rider/history" element={<RideHistory />} />
+          <Route path="/rider/profile" element={<Profile />} />
+          <Route path="/rider/blockchain" element={<BlockchainDashboard />} />
         </Route>
 
         {/* Protected - Driver */}
@@ -69,6 +77,7 @@ const AppRoutes = () => {
           }
         >
           <Route path="/driver/dashboard" element={<DriverDashboard />} />
+          <Route path="/driver/blockchain" element={<BlockchainDashboard />} />
         </Route>
 
         {/* Redirects */}

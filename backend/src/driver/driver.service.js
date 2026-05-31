@@ -165,6 +165,26 @@ class DriverService {
       },
     });
   }
+
+  /**
+   * Get active ride for a driver
+   */
+  async getActiveRide(userId) {
+    const driver = await this.prisma.driver.findUnique({ where: { userId } });
+    if (!driver) return null;
+
+    return this.prisma.ride.findFirst({
+      where: {
+        driverId: driver.id,
+        status: { in: ['ACCEPTED', 'ONGOING'] },
+      },
+      include: {
+        rider: {
+          select: { id: true, name: true, phone: true, avatar: true },
+        },
+      },
+    });
+  }
 }
 
 module.exports = { DriverService };

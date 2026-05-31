@@ -1,8 +1,9 @@
-const { Injectable, CanActivate, ExecutionContext, ForbiddenException } = require('@nestjs/common');
+const { Injectable, CanActivate, ExecutionContext, ForbiddenException, Dependencies } = require('@nestjs/common');
 const { Reflector } = require('@nestjs/core');
 const { ROLES_KEY } = require('../decorators/roles.decorator');
 
 @Injectable()
+@Dependencies(Reflector)
 class RolesGuard {
   constructor(reflector) {
     this.reflector = reflector;

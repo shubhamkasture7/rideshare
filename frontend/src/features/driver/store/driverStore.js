@@ -21,18 +21,38 @@ const useDriverStore = create((set, get) => ({
 
   clearIncomingRide: () => set({ incomingRide: null }),
 
-  acceptRide: () => {
-    const ride = get().incomingRide;
+  acceptRide: (rideData) => {
+    const ride = rideData || get().incomingRide;
     if (ride) {
+      // Normalize data structure if it comes from DB (pickupLat vs pickup.lat)
+      const normalizedRide = {
+        ...ride,
+        pickup: ride.pickup || { lat: ride.pickupLat, lng: ride.pickupLng, address: ride.pickupAddress },
+        drop: ride.drop || { lat: ride.dropLat, lng: ride.dropLng, address: ride.dropAddress },
+        status: ride.status || 'ACCEPTED',
+        acceptedAt: ride.acceptedAt || new Date().toISOString(),
+      };
+
       set({
-        assignedRide: {
-          ...ride,
-          status: 'ACCEPTED',
-          acceptedAt: new Date().toISOString(),
-        },
+        assignedRide: normalizedRide,
         incomingRide: null,
       });
     }
+  },
+
+  setAssignedRide: (ride) => {
+    if (!ride) {
+      set({ assignedRide: null });
+      return;
+    }
+    
+    // Normalize data structure
+    const normalizedRide = {
+      ...ride,
+      pickup: ride.pickup || { lat: ride.pickupLat, lng: ride.pickupLng, address: ride.pickupAddress },
+      drop: ride.drop || { lat: ride.dropLat, lng: ride.dropLng, address: ride.dropAddress },
+    };
+    set({ assignedRide: normalizedRide });
   },
 
   rejectRide: () => {
